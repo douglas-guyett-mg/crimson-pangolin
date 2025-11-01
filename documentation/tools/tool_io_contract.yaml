@@ -1,0 +1,129 @@
+# Tool Invocation Contract (ToolRequest & ToolResponse)
+# This schema governs the structured data exchanged between Si and a tool adapter.
+# Implementations must serialize to JSON; adapters may supply language-specific bindings.
+
+version: 0.1
+schema: tool_io_contract
+
+components:
+  ToolRequest:
+    type: object
+    required: true
+    fields:
+      request_id: { type: string, required: true, format: uuid }
+      tool_id: { type: string, required: true }
+      tool_version: { type: string, required: true, format: semver }
+      timestamp: { type: string, required: true, format: date-time }
+      agent_context:
+        type: object
+        required: true
+        fields:
+          agent_id: { type: string, required: true }
+          task_id: { type: string, required: true }
+          plan_step_id: { type: string, required: false }
+          user_locale: { type: string, required: false }
+          additional_tags:
+            type: list
+            required: false
+            item: { type: string }
+      invocation_policies:
+        type: object
+        required: true
+        fields:
+          timeout_seconds: { type: int, required: true, min: 1 }
+          max_retries: { type: int, required: true, min: 0 }
+          confirmation_token: { type: string, required: false }
+      inputs:
+        type: object
+        required: true
+        description: Payload validated against the manifest-defined schema.
+      memory_snippet:
+        type: object
+        required: false
+        fields:
+          summary: { type: string, required: true }
+          items:
+            type: list
+            required: false
+            item:
+              type: object
+              fields:
+                id: { type: string, required: true }
+                text: { type: string, required: true }
+                tags:
+                  type: list
+                  required: false
+                  item: { type: string }
+
+  ToolResponse:
+    type: object
+    required: true
+    fields:
+      request_id: { type: string, required: true, format: uuid }
+      status:
+        type: string
+        required: true
+        enum: [ok, error, partial]
+      outputs:
+        type: object
+        required: false
+        description: Structured payload per manifest output schema (required when status=ok or partial).
+      observations:
+        type: list
+        required: false
+        item:
+          type: object
+          fields:
+            role:
+              type: string
+              required: true
+              enum: [summary, detail, warning, audit]
+            text: { type: string, required: true }
+            tags:
+              type: list
+              required: false
+              item: { type: string }
+      memory_writes:
+        type: list
+        required: false
+        description: Draft MemoryItems for ingestion by the Working Memory Orchestrator.
+        item:
+          type: object
+          fields:
+            type:
+              type: string
+              required: true
+              enum: [tool_result]
+            text: { type: string, required: true }
+            importance: { type: float, required: false, min: 0, max: 1 }
+            metadata:
+              type: object
+              required: false
+              fields:
+                tool_id: { type: string, required: true }
+                tool_version: { type: string, required: true }
+                schema_version: { type: string, required: false }
+                output_hash: { type: string, required: false }
+            raw_outputs_reference:
+              type: object
+              required: false
+              fields:
+                uri: { type: string, required: true }          # pointer to blob/log
+                ttl_seconds: { type: int, required: false }
+      telemetry:
+        type: object
+        required: false
+        fields:
+          duration_ms: { type: int, required: true }
+          tokens_used_prompt: { type: int, required: false }
+          tokens_used_completion: { type: int, required: false }
+          cost_estimate: { type: float, required: false }
+          retries_attempted: { type: int, required: false }
+      error:
+        type: object
+        required: false
+        fields:
+          code: { type: string, required: true }
+          message: { type: string, required: true }
+          retryable: { type: bool, required: false }
+          details: { type: object, required: false }

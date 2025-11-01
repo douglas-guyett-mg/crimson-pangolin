@@ -1,0 +1,179 @@
+# Action Types Registry (docs-as-code baseline)
+# This file is the authoritative, versioned registry of PendingAction types.
+# It is consumed by the Frontal Cortex (FC) and Working Memory (WM) at runtime.
+# Adding a new type should not require code changes: behavior is policy-driven.
+
+version: 0.1
+registry: action_types
+
+schema:
+  description: Declarative schema for ActionType entries (technology-agnostic)
+  fields:
+    id: string                       # stable identifier, machine-readable
+    display_name: string             # human-friendly name
+    description: string?             # optional description
+    allowed_owners:                  # who may own/act on this action
+      - enum: [agent, user]
+    default_policies:                # baseline behavior semantics
+      requires_confirmation: bool?   # completion requires explicit confirmation
+      auto_complete: bool?           # agent may complete without user input
+      blocking: bool?                # indicates a blocking condition
+      escalation:                    # optional time-based escalation policy
+        after: string?               # ISO-8601 duration, e.g. PT24H
+        policy: string?              # named policy (implementation-defined)
+    allowed_statuses:                # allowed lifecycle states (FSM nodes)
+      - string
+    allowed_transitions:             # FSM edges: from_status -> [to_status]
+      from_status: [to_status]
+    policy_handlers:                 # optional named handlers (generic)
+      escalation: string?
+      completion_guard: string?
+    deprecation_status:              # active | deprecated
+      enum: [active, deprecated]
+
+# --------------------
+# Initial Action Types
+# --------------------
+
+items:
+  - id: agent_task
+    display_name: Agent Task
+    description: Executable task performed by the agent; may auto-complete.
+    allowed_owners: [agent]
+    default_policies:
+      requires_confirmation: false
+      auto_complete: true
+      blocking: false
+    allowed_statuses: [open, in_progress, done, cancelled]
+    allowed_transitions:
+      open: [in_progress, cancelled]
+      in_progress: [done, cancelled]
+    policy_handlers: {}
+    deprecation_status: active
+
+  - id: user_task
+    display_name: User Task
+    description: Task assigned to the user; requires explicit confirmation to complete.
+    allowed_owners: [user]
+    default_policies:
+      requires_confirmation: true
+      auto_complete: false
+      blocking: false
+    allowed_statuses: [open, awaiting_confirmation, done, cancelled]
+    allowed_transitions:
+      open: [awaiting_confirmation, cancelled]
+      awaiting_confirmation: [done, cancelled]
+    policy_handlers:
+      completion_guard: require_user_ack
+    deprecation_status: active
+
+  - id: approval_request
+    display_name: Approval Request
+    description: Request that requires approval/confirmation before proceeding.
+    allowed_owners: [user]
+    default_policies:
+      requires_confirmation: true
+      auto_complete: false
+      blocking: true
+    allowed_statuses: [open, awaiting_confirmation, approved, rejected, cancelled]
+    allowed_transitions:
+      open: [awaiting_confirmation, cancelled]
+      awaiting_confirmation: [approved, rejected, cancelled]
+    policy_handlers:
+      completion_guard: require_user_ack
+    deprecation_status: active
+
+  - id: reminder
+    display_name: Reminder
+    description: Time-based nudge that may escalate if not addressed.
+    allowed_owners: [agent, user]
+    default_policies:
+      requires_confirmation: false
+      auto_complete: false
+      blocking: false
+      escalation:
+        after: PT24H
+        policy: default_escalation
+    allowed_statuses: [scheduled, sent, escalated, done, cancelled]
+    allowed_transitions:
+      scheduled: [sent, cancelled]
+      sent: [done, escalated, cancelled]
+      escalated: [done, cancelled]
+    policy_handlers:
+      escalation: default_escalation
+    deprecation_status: active
+
+  - id: follow_up
+    display_name: Follow-up
+    description: Check back after an event/time window; not inherently blocking.
+    allowed_owners: [agent]
+    default_policies:
+      requires_confirmation: false
+      auto_complete: true
+      blocking: false
+    allowed_statuses: [open, scheduled, done, cancelled]
+    allowed_transitions:
+      open: [scheduled, done, cancelled]
+      scheduled: [done, cancelled]
+    policy_handlers: {}
+    deprecation_status: active
+
+  - id: research
+    display_name: Research
+    description: Gather information or analysis prior to execution/decision.
+    allowed_owners: [agent]
+    default_policies:
+      requires_confirmation: false
+      auto_complete: true
+      blocking: false
+    allowed_statuses: [open, in_progress, done, cancelled]
+    allowed_transitions:
+      open: [in_progress, cancelled]
+      in_progress: [done, cancelled]
+    policy_handlers: {}
+    deprecation_status: active
+
+  - id: decision
+    display_name: Decision
+    description: Explicit choice among options; often requires confirmation.
+    allowed_owners: [agent, user]
+    default_policies:
+      requires_confirmation: true
+      auto_complete: false
+      blocking: true
+    allowed_statuses: [open, decided, cancelled]
+    allowed_transitions:
+      open: [decided, cancelled]
+    policy_handlers:
+      completion_guard: require_ack
+    deprecation_status: active
+
+  - id: background_job
+    display_name: Background Job
+    description: Long-running/async process to monitor until completion.
+    allowed_owners: [agent]
+    default_policies:
+      requires_confirmation: false
+      auto_complete: false
+      blocking: false
+    allowed_statuses: [scheduled, running, succeeded, failed, cancelled]
+    allowed_transitions:
+      scheduled: [running, cancelled]
+      running: [succeeded, failed, cancelled]
+    policy_handlers: {}
+    deprecation_status: active
+
+  - id: blocker
+    display_name: Blocker
+    description: Indicates a blocking condition/constraint that halts progress.
+    allowed_owners: [agent, user]
+    default_policies:
+      requires_confirmation: false
+      auto_complete: false
+      blocking: true
+    allowed_statuses: [open, resolved, waived]
+    allowed_transitions:
+      open: [resolved, waived]
+    policy_handlers: {}
+    deprecation_status: active
+

@@ -1,0 +1,166 @@
+# Tool Manifest Schema (docs-as-code baseline)
+# This schema defines the declarative contract for `tools/{tool_name}/tool.yaml`.
+# Runtime implementations must validate manifests against this structure at load time.
+
+version: 0.1
+schema: tool_manifest
+
+fields:
+  id:
+    type: string
+    required: true
+    pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'   # kebab-case slug
+  version:
+    type: string
+    required: true
+    format: semver                       # MAJOR.MINOR.PATCH
+  display_name:
+    type: string
+    required: true
+  description:
+    type: string
+    required: true
+  maintainer:
+    type: object
+    required: false
+    fields:
+      name: { type: string, required: true }
+      contact: { type: string, required: true }   # email or URL
+  entrypoint:
+    type: object
+    required: true
+    fields:
+      type:
+        type: string
+        required: true
+        enum: [cli, http, function, workflow]
+      command:
+        type: string
+        required: false
+        description: Required when type=cli (shell command or executable)
+      path:
+        type: string
+        required: false
+        description: Module path or function reference when type=function/workflow
+      url:
+        type: string
+        required: false
+        description: Base URL when type=http
+      runtime:
+        type: string
+        required: false
+        description: Optional runtime hint (e.g., python3.11, node18)
+      args_template:
+        type: object
+        required: false
+        description: Template for rendering CLI args or HTTP payloads
+  capabilities:
+    type: list
+    required: true
+    item:
+      type: object
+      fields:
+        name: { type: string, required: true }       # short action verb
+        description: { type: string, required: true }
+        target_entities:
+          type: list
+          required: false
+          item: { type: string }
+  inputs:
+    type: object
+    required: true
+    fields:
+      schema_ref:
+        type: string
+        required: false
+        description: URI to shared schema catalog (OpenAPI/JSON Schema)
+      schema_inline:
+        type: object
+        required: false
+        description: Embedded JSON Schema when ref is absent
+      examples:
+        type: list
+        required: false
+        item:
+          type: object
+          fields:
+            summary: { type: string, required: true }
+            data: { type: object, required: true }
+  outputs:
+    type: object
+    required: true
+    fields:
+      schema_ref:
+        type: string
+        required: false
+      schema_inline:
+        type: object
+        required: false
+      examples:
+        type: list
+        required: false
+        item:
+          type: object
+          fields:
+            summary: { type: string, required: true }
+            data: { type: object, required: true }
+  side_effects:
+    type: list
+    required: false
+    description: Declare external mutations so planners can request confirmation.
+    item:
+      type: object
+      fields:
+        scope:
+          type: string
+          required: true
+          enum: [filesystem, network, datastore, external_api, other]
+        description: { type: string, required: true }
+        requires_confirmation: { type: bool, required: false }
+  resources:
+    type: object
+    required: false
+    fields:
+      environment:
+        type: list
+        required: false
+        item: { type: string }               # expected env vars / secrets
+      permissions:
+        type: list
+        required: false
+        item: { type: string }               # named scopes (e.g., crm.read)
+      rate_limit:
+        type: object
+        required: false
+        fields:
+          unit: { type: string, required: true, enum: [per_minute, per_hour, per_day] }
+          value: { type: int, required: true }
+  policies:
+    type: object
+    required: false
+    fields:
+      confirmation_required: { type: bool, required: false }
+      max_retries: { type: int, required: false, min: 0 }
+      timeout_seconds: { type: int, required: false, min: 1 }
+      escalation_policy: { type: string, required: false }
+  observability:
+    type: object
+    required: false
+    fields:
+      metrics: { type: list, required: false, item: { type: string } }
+      logs: { type: list, required: false, item: { type: string } }
+      tracing:
+        type: object
+        required: false
+        fields:
+          enabled: { type: bool, required: true }
+          span_name: { type: string, required: false }
+  changelog:
+    type: list
+    required: false
+    item:
+      type: object
+      fields:
+        version: { type: string, required: true }
+        date: { type: string, required: true, format: date }
+        summary: { type: string, required: true }
