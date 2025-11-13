@@ -2,35 +2,26 @@
 
 ## Overview
 
-The Working Memory Store is a bounded, short-term memory system that maintains the most recent and important information needed for the current task or interaction. It implements a fixed-capacity queue with intelligent eviction policies to ensure that the most relevant information is always available while respecting memory constraints.
+The Working Memory Store is a short-term memory system that maintains the most recent and important information needed for the current task or interaction. It provides rapid access to recent information while supporting intelligent eviction policies.
 
 ## Purpose
 
 The Working Memory Store serves to:
 
 1. **Maintain Current Context**: Keep the most recent and relevant information immediately accessible
-2. **Enforce Capacity Limits**: Prevent unbounded memory growth through size and token budgets
-3. **Prioritize Important Items**: Preserve high-importance items even when capacity is exceeded
-4. **Support Rapid Access**: Enable fast retrieval of recent information
+2. **Prioritize Important Items**: Preserve high-importance items when eviction is needed
+3. **Support Rapid Access**: Enable fast retrieval of recent information
+4. **Support Eviction**: Implement intelligent eviction policies to manage capacity
 
 ## Core Characteristics
 
-### Bounded Queue
-- **Max Items**: 64 items maximum
-- **Max Tokens**: 4,000 tokens maximum
-- **FIFO Eviction**: Items are evicted in first-in-first-out order when capacity is exceeded
+### Queue Structure
+- **FIFO Eviction**: Items are evicted in first-in-first-out order when capacity is needed
 - **Importance Guard**: High-importance items are protected from eviction
-
-### Capacity Management
-The store respects two types of limits:
-
-1. **Item Count Limit**: Maximum 64 items in the queue
-2. **Token Budget**: Maximum 4,000 tokens total
-
-When either limit is exceeded, the store evicts items according to the eviction policy.
+- **Recency Bias**: Recent items are weighted more heavily in eviction decisions
 
 ### Eviction Policy
-When capacity is exceeded, the store evicts items in this order:
+The store implements an intelligent eviction policy:
 
 1. **Low-Importance Items First**: Items with importance_score < 0.3 are evicted first
 2. **FIFO Within Priority**: Among items of similar importance, older items are evicted first
@@ -124,18 +115,16 @@ Returns information about queue capacity and usage.
 **Returns**:
 - Current item count
 - Current token usage
-- Max items limit (64)
-- Max tokens limit (4000)
-- Available space
 - Eviction policy information
+- TTL configuration
 
 ## Design Principles
 
-1. **Bounded**: Always respects capacity limits
-2. **Intelligent Eviction**: Preserves important information
-3. **Fast Access**: Optimized for rapid retrieval
-4. **Deterministic**: Eviction decisions are reproducible
-5. **Auditable**: All evictions are logged
+1. **Intelligent Eviction**: Preserves important information through importance-based policies
+2. **Fast Access**: Optimized for rapid retrieval
+3. **Deterministic**: Eviction decisions are reproducible
+4. **Auditable**: All evictions are logged
+5. **Flexible Capacity**: Grows as needed, eviction policies manage storage
 
 ## Interaction with Other Components
 
@@ -148,8 +137,6 @@ Returns information about queue capacity and usage.
 
 The Working Memory Store can be configured with:
 
-- **max_items**: Maximum number of items (default: 64)
-- **max_tokens**: Maximum token budget (default: 4000)
 - **step_ttl**: Items older than this many steps are candidates for eviction (default: 20)
 - **wall_ttl**: Items older than this duration are candidates for eviction (default: 1 hour)
 - **importance_threshold_low**: Importance below this is evicted first (default: 0.3)
@@ -158,15 +145,15 @@ The Working Memory Store can be configured with:
 ## Example Scenario
 
 1. User starts a conversation (step 0)
-2. Working Memory receives 10 items (total: 500 tokens)
+2. Working Memory receives 10 items
 3. User continues conversation (step 5)
-4. Working Memory receives 20 more items (total: 1500 tokens)
+4. Working Memory receives 20 more items
 5. User continues (step 10)
-6. Working Memory receives 30 more items (total: 2500 tokens)
+6. Working Memory receives 30 more items
 7. User continues (step 15)
-8. Working Memory receives 25 more items (total: 3500 tokens)
+8. Working Memory receives 25 more items
 9. User continues (step 20)
-10. Working Memory receives 20 more items (would be 4500 tokens)
-11. Store evicts low-importance items from steps 0-5 to stay within 4000 token limit
-12. Final state: 65 items, 3950 tokens, newest items preserved
+10. Working Memory receives 20 more items
+11. Store evicts low-importance items from steps 0-5 to make room
+12. Final state: Recent items preserved, old low-importance items evicted
 

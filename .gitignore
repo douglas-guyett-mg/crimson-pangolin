@@ -212,3 +212,6 @@ checkpoints/
 
 # Jupyter notebook outputs
 *.ipynb_checkpoints/
+
+# Agent comments and summaries (local development notes)
+agent-comments/

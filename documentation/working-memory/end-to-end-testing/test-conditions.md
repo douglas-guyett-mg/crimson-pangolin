@@ -242,23 +242,27 @@
 
 ---
 
-### Test 17.12: Budget Exhaustion
-**Objective**: Verify system handles budget exhaustion
+### Test 17.12: Eviction Under Load
+**Objective**: Verify system handles eviction correctly under heavy load
 
 **Setup**:
-- Set token budget to 1000
+- Write many items to trigger eviction
+- Monitor eviction policy enforcement
 
 **Steps**:
-1. Write items until budget is exhausted
-2. Attempt to write more items
-3. Verify budget enforcement
+1. Write 1000 items with varying importance
+2. Monitor eviction events
+3. Verify eviction policy is applied
 
 **Expected Outcome**:
-- Budget is enforced
+- Eviction is triggered appropriately
+- Low-importance items evicted first
+- System remains responsive
 
 **Verification**:
-- Further writes are rejected or sampled
-- Budget is not exceeded
+- Eviction events logged
+- Low-importance items removed
+- System performance acceptable
 
 ---
 

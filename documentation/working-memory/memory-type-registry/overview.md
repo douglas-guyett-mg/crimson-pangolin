@@ -15,7 +15,7 @@ The registry serves three critical functions:
 ## Key Concepts
 
 ### Memory Type
-A memory type is a named, versioned implementation of the MemoryPlugin interface. Examples include:
+A memory type is a named, versioned implementation of the Memory Interface. Examples include:
 - Working Memory (bounded queue for immediate context)
 - Episodic Memory (append-only log for experiences)
 - Semantic Memory (upsert-based store for facts and patterns)
@@ -34,7 +34,7 @@ The registry uses a factory pattern to instantiate memory types. When a componen
 ## Design Principles
 
 1. **No Hard-Coded Types**: Memory types are not hard-coded into the system. All types are registered dynamically.
-2. **Uniform Interface**: All memory types implement the MemoryPlugin interface, allowing the orchestrator to treat them uniformly.
+2. **Uniform Interface**: All memory types implement the Daemon Interface, allowing the orchestrator to treat them uniformly.
 3. **Metadata-Driven**: Each registered type includes metadata (name, version, capabilities) that describes its behavior.
 4. **Fail-Safe**: If a memory type is not registered, the system gracefully handles the error rather than crashing.
 

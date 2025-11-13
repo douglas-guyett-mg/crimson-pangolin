@@ -1,12 +1,12 @@
-# Consciousness Folder — Structure and Usage (Platform-Independent)
+# Consciousness Folder - Structure and Usage (Platform-Independent)
 
 Author: Augment Agent  
 Status: Draft v0.1  
-Last updated: 2025-10-29
+Last updated: 2025-11-04
 
 ## 1) Purpose
-- Provide a modular, technology-agnostic specification for SI’s self-concept (“consciousness”).
-- Serve as reference “code” the working-memory subsystem can assemble into live prompts.
+- Provide a modular, technology-agnostic specification for SI's self-concept ("consciousness").
+- Implement the Daemon Interface to provide consciousness data to other daemons and Working Memory.
 - Define verification requirements that keep SI aligned with core engineering tenets.
 
 ## 2) Contents
@@ -15,20 +15,30 @@ Last updated: 2025-10-29
 - `capabilities_catalog.md`: enumerated capabilities, expected behaviors, and test specs.
 - `mode_framework.md`: abstraction contract for defining, loading, and retiring modes.
 - `governance_and_evolution.md`: guardrails for instruction updates and rollout procedures.
+- `data-model.md`: structured data model for consciousness items with versioning and approval.
+- `daemon-specification.md`: consciousness as a daemon implementing the Daemon Interface.
 
-## 3) Integration with Working Memory
-- Working memory treats this folder as a prompt template library.  
-- For any task, it may:
-  1. Read `core_identity.md` to anchor SI’s self-description.
-  2. Pull mandate and capability sections relevant to the current mode or tooling plan.
-  3. Generate a composed system prompt by concatenating snippets in the prescribed order below.
-- Suggested prompt assembly order:
-  1. `[Core Identity Charter]`
-  2. `[Mandates Layered Summary]`
-  3. `[Mode Declaration Block]` (from `mode_framework.md`)
-  4. `[Active Capability Guarantees]` (from `capabilities_catalog.md`)
-  5. `[Governance Hooks / Change Controls]`
-- Working memory must log which sections were injected, with rationale, to preserve auditability.
+## 3) Consciousness as a Daemon
+
+Consciousness implements the **Daemon Interface** and is accessed by other daemons and Working Memory via the `query()` method:
+
+- **get_purpose()**: Returns "Provide SI's self-concept, identity, mandates, capabilities, and governance rules"
+- **get_instructions()**: Returns the consciousness specifications (authoritative instructions for SI's behavior)
+- **query(prompt, metadata)**: Returns structured consciousness items matching the query
+
+### Integration with Working Memory
+- Working Memory calls `consciousness.query()` to retrieve consciousness items
+- Receives structured data objects (not text snippets)
+- Formats them into prompts with rationale logging
+- Example: `consciousness.query("What mandates apply to my current mode?", {current_mode: "code_review"})`
+
+### Integration with Other Daemons
+- Any daemon can query consciousness for mandates, capabilities, or governance rules
+- Router queries consciousness to understand urgency/priority constraints
+- Executor queries consciousness to understand execution constraints
+- All queries are asynchronous (return Futures)
+
+See `daemon-specification.md` for detailed query patterns and integration examples.
 
 ## 4) Technology-Agnostic Requirements
 - All specs are expressed in natural language with explicit interfaces, data contracts, and tests.
@@ -45,5 +55,5 @@ Last updated: 2025-10-29
 - Each change must include:
   - Rationale, expected behavior deltas, and updated tests.
   - Impact review comparing new vs. previous prompt compositions.
-- Working memory integrations must re-run regression tests whenever this folder changes.
+- Consciousness daemon must re-run regression tests whenever this folder changes.
 

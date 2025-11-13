@@ -18,8 +18,9 @@
 - Context includes relevant items
 
 **Verification**:
-- Context is non-empty
-- Context includes weather-related items
+- Context contains >= 3 items (memory objects)
+- At least 80% of returned items have semantic relevance >= 0.7 to "weather" query
+- Context.token_count is reported and non-zero
 
 ---
 
@@ -292,7 +293,9 @@
 - Skill confidence increased
 
 **Verification**:
-- Skill confidence > previous confidence
+- Skill confidence increases by >= 0.05 (on 0-1 scale)
+- New confidence = old_confidence + (success_weight * learning_rate) where success_weight >= 0.05
+- Confidence value remains in valid range [0.0, 1.0]
 
 ---
 

@@ -1,12 +1,12 @@
-# Conversation History Plugin
+# Conversation History Daemon
 
 ## Overview
 
-The Conversation History Plugin maintains a rolling buffer of recent utterances (user messages, assistant responses, system messages) and generates summaries of older conversations. It provides a specialized memory type optimized for maintaining conversational context while respecting token budgets.
+The Conversation History Daemon maintains a rolling buffer of recent utterances (user messages, assistant responses, system messages) and generates summaries of older conversations. It provides a specialized memory type optimized for maintaining conversational context while respecting token budgets. It implements the Daemon Interface (see `documentation/daemon-interface.md`).
 
 ## Purpose
 
-The Conversation History Plugin serves to:
+The Conversation History Daemon serves to:
 
 1. **Maintain Recent Utterances**: Keep the last N utterances immediately accessible
 2. **Summarize Older Conversations**: Compress older utterances into summaries
@@ -42,83 +42,70 @@ Each utterance includes:
 - **utterance_index**: Position in the rolling buffer
 - **timestamp**: When the utterance was created
 
-## Operations
+## Daemon Interface Implementation
 
-### memorize(item, metadata)
-Adds a new utterance to the conversation history.
+The Conversation History Daemon implements the standard Daemon Interface:
 
-**Behavior**:
-- Appends utterance to the buffer
-- Records speaker, turn_number, timestamp
-- Checks buffer capacity
-- Evicts oldest utterances if necessary
-- Summarizes evicted utterances
+### query(natural_language_query, metadata?, data?)
+Handles all conversation history operations through natural language queries.
 
-**Returns**:
-- Confirmation of memorization
-- Utterance reference (position in buffer)
-- List of evicted utterances (if any)
-- Summary information (if generated)
-
-### remember(prompt, metadata)
-Retrieves utterances from the conversation history based on a prompt.
+**Query Types**:
+- **Store**: `"Add utterance: [text]"` - Appends utterance to buffer
+- **Retrieve**: `"Find utterances about [topic]"` - Searches buffer for relevance
+- **Remove**: `"Remove oldest utterance"` or `"Remove before turn N"` - Removes utterances
+- **Summarize**: `"Summarize conversation"` - Generates summary of buffer
 
 **Behavior**:
-- Searches all utterances in buffer for relevance to prompt
-- Applies filters (speaker, turn_number, etc.)
-- Returns utterances ranked by relevance and recency
-- Most recent matching utterances first
+- Interprets natural language query to determine operation
+- For store operations: Appends utterance, records metadata, checks capacity, evicts if needed
+- For retrieve operations: Searches buffer, applies filters, ranks by relevance/recency
+- For remove operations: Interprets instructions, removes matching utterances
+- For summarize operations: Generates compressed summary within token limits
 
 **Returns**:
-- List of matching utterances
-- Ranked by relevance and recency
+- Operation result (confirmation, list of items, summary, etc.)
+- Metadata about operation (items affected, tokens used, etc.)
 
-### forget(forget_instructions, mode)
-Removes an utterance from the conversation history based on natural language instructions.
+### get_purpose()
+Returns: `"Maintain rolling buffer of recent conversation utterances with automatic summarization of older conversations"`
 
-**Supported Instructions**:
-- `"oldest"` - Remove the oldest utterance
-- `"before:turn_N"` - Remove all utterances before turn N
-- `"speaker:user"` or `"speaker:assistant"` - Remove utterances from specific speaker
-- `"position:N"` - Remove utterance at position N
+### get_instructions()
+Returns guidance on how to use this daemon for conversation context management
 
-**Behavior**:
-- Interprets natural language instructions
-- If mode="soft": marks as deleted but keeps in buffer
-- If mode="hard": removes from buffer and updates indexes
-- Updates indexes
+## Query Examples
 
-**Returns**:
-- Confirmation of forget operation
-- Utterance reference that was forgotten
-- Updated buffer size
+**Store Operation**:
+```
+query("Add user utterance: 'What's the weather today?'",
+      metadata={speaker: "user", turn_number: 5})
+```
 
-### summarize(scope, token_limit)
-Generates a summary of conversation history.
+**Retrieve Operation**:
+```
+query("Find utterances about weather",
+      metadata={speaker: "user"})
+```
 
-**Behavior**:
-- Summarizes all utterances or recent utterances based on scope
-- Respects token limit
-- Preserves key information from conversation
+**Remove Operation**:
+```
+query("Remove oldest utterance")
+```
 
-**Returns**:
-- Summary text
-- Token count
-- Source utterances included
+**Summarize Operation**:
+```
+query("Summarize conversation",
+      data={token_limit: 500})
+```
 
-### get_capacity_info()
-Returns information about buffer capacity and usage.
+## Capacity Management
 
-**Behavior**:
-- Returns current buffer state
+The daemon manages buffer capacity automatically:
 
-**Returns**:
-- Current utterance count
-- Current token usage
-- Max utterances limit (20)
-- Max tokens limit (8000)
-- Available space
-- Summary information
+- **Max Utterances**: 20 (configurable)
+- **Max Tokens**: 8000 (configurable)
+- **Eviction Policy**: FIFO (oldest utterances evicted first)
+- **Summarization**: Evicted utterances are automatically summarized
+- **Summary Injection**: Summaries are injected into context for retrieval
 
 ## Design Principles
 
@@ -130,20 +117,21 @@ Returns information about buffer capacity and usage.
 
 ## Interaction with Other Components
 
-- **Memory Orchestrator**: Calls memorize/remember/forget/summarize/get_capacity_info operations
-- **Budget Manager**: Enforces token budgets
+- **Memory Orchestrator**: Calls query() to store/retrieve/remove/summarize utterances
+- **Budget Manager**: Enforces token budgets during operations
 - **Turn Trace**: Logs all conversation operations
 - **Frontal Cortex**: May mark utterances as important
 
 ## Configuration
 
-The Conversation History Plugin can be configured with:
+The Conversation History Daemon can be configured with:
 
-- **buffer_size**: Maximum utterances in buffer (default: 20)
-- **max_tokens**: Maximum token budget (default: 8000)
+- **buffer_size**: Maximum utterances in buffer (configurable)
 - **backend**: Storage backend ("in-memory" or "durable", default: "in-memory")
 - **summarization_enabled**: Whether to summarize evicted utterances (default: true)
-- **summary_token_limit**: Maximum tokens for summary (default: 1000)
+- **eviction_policy**: Policy for managing buffer capacity (e.g., FIFO, importance-based)
+
+**Note**: Specific capacity numbers are technology-dependent and will be determined during implementation based on the chosen storage backend.
 
 ## Example Scenario
 

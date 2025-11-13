@@ -60,9 +60,7 @@ User Input
     ↓
 Router: MEDIUM URGENCY detected
     ↓
-Context Assembler: Gather initial context
-    ↓
-Plan Generator: Create initial plan
+Clarifier: Handle any ambiguities
     ↓
 Responder: Generate partial response
     ↓
@@ -82,11 +80,10 @@ Send Follow-up Response (END TURN 2)
 **Turn 1:**
 - Input: "I need to book a flight to Paris next week"
 - Router detects: MEDIUM URGENCY (time-sensitive but not critical)
-- Context Assembler gathers: User preferences, budget, dates
-- Plan Generator creates: Search flights, check hotels, check activities
-- Responder generates: "I'll help you plan. I found several flights for next week. Let me check hotels and activities while you review these options."
+- Clarifier: Confirms dates and preferences
+- Responder generates: "I'll help you plan. Let me search for flights, hotels, and activities for your Paris trip."
 - Response sent (END TURN 1)
-- Background: Executor searches hotels, activities, prices
+- Background: Executor searches flights, hotels, activities, prices
 
 **Turn 2 (parallel):**
 - Executor finishes: Hotels and activities found
@@ -100,10 +97,6 @@ Send Follow-up Response (END TURN 2)
 User Input
     ↓
 Router: LOW URGENCY detected
-    ↓
-Context Assembler: Gather comprehensive context
-    ↓
-Plan Generator: Create detailed plan
     ↓
 Executor: Execute all steps
     ↓
@@ -119,8 +112,6 @@ Send Response (END TURN 1)
 **Turn 1:**
 - Input: "Tell me about the history of coffee"
 - Router detects: LOW URGENCY (informational, no time pressure)
-- Context Assembler gathers: Relevant knowledge, user interests
-- Plan Generator creates: Research origins, trade history, cultural impact
 - Executor executes: Gathers comprehensive information
 - Evaluator verifies: All aspects covered
 - Responder generates: Comprehensive response with history, trade, culture
@@ -185,7 +176,7 @@ This enables coordination and prevents duplicate work.
 ## Technology Implications
 
 Response timing strategy affects technology choices:
-- **Async execution**: Hobgoblins must support async operations
+- **Async execution**: Daemons must support async operations
 - **Message queues**: Turns need to communicate asynchronously
 - **Shared state**: Working memory must be accessible across turns
 - **Scheduling**: System needs to schedule when responses are sent

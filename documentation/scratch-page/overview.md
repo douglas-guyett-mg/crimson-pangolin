@@ -1,29 +1,50 @@
 # Scratch Page System
 
-**Status**: Specification v0.1  
-**Last Updated**: 2025-10-31  
-**Alignment**: Si Core Engineering Tenants (documentation-as-code, tests-first, modularity, technology-agnosticism)
+**Status:** v0.1 (Draft)
+**Last Updated:** 2025-11-07
+**Alignment:** Si Core Engineering Tenants (documentation-as-code, tests-first, modularity, technology-agnosticism)
 
 ## Overview
 
-The Scratch Page is a semi-durable, shared working notes system where hobgoblins, tools, and memory systems record pending observations, contextual insights, and alerts that don't fit the formal structure of Frontal Cortex goals and pending actions.
+The Scratch Page is a semi-durable, shared working notes system where daemons, tools, and memory systems record stories and vignettes—observations, contextual insights, and alerts that may or may not result in Frontal Cortex actions and plans.
 
-The Scratch Page enables Si to maintain situational awareness across turns by capturing:
+The Scratch Page captures the "what we've learned" stories that inform decision-making:
 - **Pending states**: "Waiting for email confirmation"
 - **Contextual insights**: "They're going to bistro vendome - they'll like the 2020 Marcel La Pierre"
 - **Risk alerts**: "Fraud ring targeting people like them - high alert"
-- **Observations**: Findings from tools and hobgoblins that inform future decisions
+- **Observations**: Findings from tools and daemons that inform future decisions
+
+These stories may lead to Frontal Cortex actions (e.g., "Send wine recommendation"), or they may remain as contextual awareness without formal commitment.
 
 ## Purpose
 
 The Scratch Page serves to:
 
-1. **Capture Transient Observations**: Record findings that are important but not formal goals/actions
-2. **Enable Cross-Turn Awareness**: Make observations available to future turns
-3. **Support Tool Integration**: Allow tools to add findings and recommendations
-4. **Support Hobgoblin Coordination**: Enable hobgoblins to share pending thoughts
-5. **Inform Decision-Making**: Provide context for Router, Executor, and other hobgoblins
-6. **Track Pending States**: Maintain awareness of waiting conditions and pending confirmations
+1. **Capture Stories and Vignettes**: Record observations, insights, and alerts as stories that may or may not lead to formal actions
+2. **Enable Cross-Turn Awareness**: Make observations available to future turns for context and decision-making
+3. **Support Tool Integration**: Allow tools to add findings and recommendations without formal commitment
+4. **Support Daemon Coordination**: Enable daemons to share pending thoughts and contextual awareness
+5. **Inform Decision-Making**: Provide context for Router, Executor, and other daemons to decide what becomes a Frontal Cortex action
+6. **Track Pending States**: Maintain awareness of waiting conditions and pending confirmations that may or may not require formal action
+
+## Relationship to Frontal Cortex
+
+**Scratch Page** and **Frontal Cortex** serve complementary purposes:
+
+- **Scratch Page**: "What we've learned/observed" — Stories and vignettes that capture contextual awareness
+- **Frontal Cortex**: "What we're committing to do" — Formal goals and actionable next steps
+
+**Flow**:
+1. Tools/daemons observe something → Add story to Scratch Page
+2. Router/Executor review Scratch Page stories
+3. If story warrants action → Create Frontal Cortex action/goal
+4. If not → Story remains in Scratch, expires, or gets archived
+
+**Key Distinction**:
+- Scratch Page stories are **low-commitment** observations that inform decision-making
+- Frontal Cortex actions are **high-commitment** formal plans with ownership and accountability
+- A story may never become an action (it just provides context)
+- An action should be traceable back to the story that motivated it
 
 ## Scope
 
@@ -39,7 +60,7 @@ An atomic unit in the Scratch Page containing:
 - **id**: Unique identifier (ULID)
 - **type**: Classification (pending_confirmation, contextual_insight, risk_alert, observation, etc.)
 - **content**: The actual observation text
-- **source**: Who created it (tool_name, hobgoblin_name, system)
+- **source**: Who created it (tool_name, daemon_name, system)
 - **owner**: Who should act on it (agent, user, or specific tool)
 - **status**: Current state (active, pending_review, resolved, archived)
 - **confidence**: Float 0-1 indicating certainty
@@ -81,7 +102,7 @@ New types can be added via registry without code changes.
 
 ### Integration Points
 - **Tools**: Add observations during execution
-- **Hobgoblins**: Read/write observations during decision-making
+- **Daemons**: Read/write observations during decision-making
 - **Memory Systems**: Surface relevant observations during context assembly
 - **Router**: Uses observations in urgency assessment
 - **Executor**: Uses observations in tool selection
@@ -166,12 +187,12 @@ Returns all active observations, ordered by priority.
 3. **Transparent**: All operations are logged for auditability
 4. **Deterministic**: Same inputs produce same outputs
 5. **Modular**: Scratch Page is independent of other systems
-6. **Accessible**: All hobgoblins and tools can read/write
+6. **Accessible**: All daemons and tools can read/write
 
 ## Interaction with Other Systems
 
 - **Tools**: Add observations during execution; read observations for context
-- **Hobgoblins**: Read observations during decision-making; write pending thoughts
+- **Daemons**: Read observations during decision-making; write pending thoughts
 - **Memory Systems**: Surface relevant observations during context assembly
 - **Router**: Uses observations in urgency assessment
 - **Executor**: Uses observations in tool selection and planning

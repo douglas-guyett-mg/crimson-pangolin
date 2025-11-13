@@ -2,18 +2,18 @@
 
 ## Overview
 
-The turn architecture is designed as modular, separate hobgoblins for clarity and maintainability. However, for speed optimization, these hobgoblins can be combined into a single LLM call in a "fast path" when the technology stack is chosen.
+The turn architecture is designed as modular, separate daemons for clarity and maintainability. However, for speed optimization, these daemons can be combined into a single LLM call in a "fast path" when the technology stack is chosen.
 
 ## Design Philosophy
 
 **Modularity First, Optimization Second**
 
-- **Design Phase**: Hobgoblins are documented as separate components with clear responsibilities
+- **Design Phase**: Daemons are documented as separate components with clear responsibilities
 - **Implementation Phase**: Technology choices determine whether to use modular or optimized approach
-- **Optimization Phase**: Fast path combines hobgoblins into single LLM call for speed
+- **Optimization Phase**: Fast path combines daemons into single LLM call for speed
 
 This approach ensures:
-- Clear specification of what each hobgoblin does
+- Clear specification of what each daemon does
 - Flexibility in implementation strategy
 - Ability to optimize without losing clarity
 
@@ -22,10 +22,10 @@ This approach ensures:
 ### Modular Approach (Current Design)
 
 ```
-Router → Clarifier → Context Assembler → Constraint Checker → Plan Generator → Executor → Evaluator → Reflector → Responder
+Router → Clarifier → Executor → Evaluator → Reflector → Responder
 
-Each hobgoblin is a separate decision point
-Each hobgoblin makes its own decision
+Each daemon is a separate decision point
+Each daemon makes its own decision
 Multiple LLM calls may be needed
 ```
 
@@ -34,7 +34,7 @@ Multiple LLM calls may be needed
 ```
 Single LLM Call:
   Input: User message + consciousness + working memory + episodic memory
-  Output: All hobgoblin decisions in one call
+  Output: All daemon decisions in one call
     - Urgency assessment (Router)
     - Clarification needed? (Clarifier)
     - Relevant context (Context Assembler)
@@ -54,18 +54,18 @@ Single LLM Call:
 
 ### Disadvantages
 - **Complexity**: Single prompt must handle all decisions
-- **Flexibility**: Harder to customize individual hobgoblins
-- **Debugging**: Harder to understand which hobgoblin made which decision
+- **Flexibility**: Harder to customize individual daemons
+- **Debugging**: Harder to understand which daemon made which decision
 - **Modularity**: Loses separation of concerns
 
 ## When Modular Approach Makes Sense
 
 ### Advantages
-- **Clarity**: Each hobgoblin has clear responsibility
-- **Flexibility**: Can customize individual hobgoblins
-- **Debugging**: Easy to understand which hobgoblin made which decision
+- **Clarity**: Each daemon has clear responsibility
+- **Flexibility**: Can customize individual daemons
+- **Debugging**: Easy to understand which daemon made which decision
 - **Modularity**: Separation of concerns
-- **Testability**: Each hobgoblin can be tested independently
+- **Testability**: Each daemon can be tested independently
 
 ### Disadvantages
 - **Speed**: Multiple LLM calls are slower
@@ -91,7 +91,7 @@ Decision: Router decides which path to use based on query complexity
 
 ### Prompt Engineering
 If using fast path, the prompt must:
-- Clearly specify all hobgoblin responsibilities
+- Clearly specify all daemon responsibilities
 - Provide examples of each type of decision
 - Include consciousness, working memory, episodic memory
 - Request structured output (JSON, YAML, etc.)
@@ -109,7 +109,7 @@ Fast path output should include:
 ### Fallback Strategy
 If fast path fails or produces unexpected output:
 - Fall back to modular approach
-- Use individual hobgoblins for decision-making
+- Use individual daemons for decision-making
 - Provide more detailed guidance
 
 ## Technology Stack Implications
@@ -147,5 +147,5 @@ This approach ensures:
 
 ## Key Principle
 
-**The architecture is independent of implementation.** Whether implemented as modular hobgoblins or a single fast path LLM call, the turn architecture remains the same. The hobgoblins are a specification of what needs to happen, not necessarily how it's implemented.
+**The architecture is independent of implementation.** Whether implemented as modular daemons or a single fast path LLM call, the turn architecture remains the same. The daemons are a specification of what needs to happen, not necessarily how it's implemented.
 

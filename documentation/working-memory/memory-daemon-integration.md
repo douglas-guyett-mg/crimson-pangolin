@@ -145,7 +145,7 @@ StateExport:
   
   # Metadata
   metadata:
-    hobgoblins_activated: string[]
+    daemons_activated: string[]
     tools_used: string[]
     memory_types_accessed: string[]
     budget_used: integer
@@ -506,5 +506,5 @@ Daemons maintain consistency:
 See related documentation:
 - `documentation/turn/overview.md` - Turn architecture
 - `documentation/working-memory/memory-orchestrator/overview.md` - Memory Orchestrator
-- `documentation/turn/hobgoblins/reflector.md` - Reflector hobgoblin (learning)
+- `documentation/turn/daemons/reflector.md` - Reflector daemon (learning)
 

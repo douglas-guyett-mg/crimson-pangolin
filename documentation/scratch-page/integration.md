@@ -75,7 +75,7 @@ Tools typically add:
 
 ---
 
-## Hobgoblin Integration
+## Daemon Integration
 
 ### Router Integration
 
@@ -98,11 +98,10 @@ Router Decision Process:
 
 ```
 Executor Planning:
-  1. Receive plan from Plan Generator
-  2. Query Scratch Page: list_observations({ owner: "agent" })
-  3. Use observations to refine tool selection
-  4. Adjust execution order based on pending states
-  5. Execute tools
+  1. Query Scratch Page: list_observations({ owner: "agent" })
+  2. Use observations to refine tool selection
+  3. Adjust execution order based on pending states
+  4. Execute tools
 ```
 
 **Example**: If pending_confirmation exists for email, Executor prioritizes verification tools.
@@ -292,16 +291,16 @@ Router/Executor query Scratch Page
 Observation informs decision-making
 ```
 
-### Hobgoblin → Scratch Page → Other Hobgoblins
+### Daemon → Scratch Page → Other Daemons
 
 ```
-Hobgoblin A (e.g., Executor)
+Daemon A (e.g., Executor)
   ↓
 Adds observation (e.g., "tool X failed")
   ↓
 Scratch Page stores observation
   ↓
-Hobgoblin B (e.g., Error Handler)
+Daemon B (e.g., Error Handler)
   ↓
 Queries Scratch Page
   ↓
@@ -358,7 +357,7 @@ ToolResponse:
       metadata: object
 ```
 
-### Hobgoblin API
+### Daemon API
 
 ```
 scratch_page.add_observation(item: ObservationItem) → ObservationItem
@@ -385,7 +384,7 @@ If tool adds invalid observation:
 If Scratch Page query fails:
 - Return empty result set
 - Log error to Turn Trace
-- Don't block hobgoblin decision-making
+- Don't block daemon decision-making
 
 ### Concurrent Access Errors
 
@@ -424,7 +423,7 @@ If concurrent update conflict:
 
 - All observations scoped to agent_id
 - Tools can only add observations, not modify others'
-- Hobgoblins can read all observations for their agent
+- Daemons can read all observations for their agent
 
 ### Data Privacy
 
@@ -442,7 +441,7 @@ If concurrent update conflict:
 - Verify tools can add observations
 - Verify tools can query observations
 
-### Hobgoblin Testing
+### Daemon Testing
 
 - Test Router with active risk_alerts
 - Test Executor with pending_confirmations

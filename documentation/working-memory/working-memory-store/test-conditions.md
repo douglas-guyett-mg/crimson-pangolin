@@ -1,72 +1,70 @@
 # Working Memory Store - Test Conditions
 
-## Test Suite: Capacity Management
+## Test Suite: Eviction Policy
 
-### Test 4.1: Respect Item Count Limit
-**Objective**: Verify that the store respects the max_items limit (64)
+### Test 4.1: Evict Low-Importance Items First
+**Objective**: Verify that the store evicts low-importance items before high-importance items
 
 **Setup**:
-- Create a Working Memory Store with max_items=64
-- Create 70 items with importance_score=0.5
+- Create a Working Memory Store
+- Add 10 items with importance_score=0.2 (low)
+- Add 10 items with importance_score=0.8 (high)
 
 **Steps**:
-1. Write all 70 items to the store
-2. Verify store size
+1. Trigger eviction (by adding more items or calling evict())
+2. Verify which items were evicted
 
 **Expected Outcome**:
-- Store contains exactly 64 items
-- 6 items were evicted
-- Oldest items were evicted first
+- Low-importance items (0.2) are evicted first
+- High-importance items (0.8) are preserved
 
 **Verification**:
-- `store.size()` equals 64
-- Eviction report shows 6 items evicted
-- Evicted items are the first 6 written
+- Evicted items have importance_score < 0.3
+- Remaining items include all high-importance items
 
 ---
 
-### Test 4.2: Respect Token Budget
-**Objective**: Verify that the store respects the max_tokens limit (4000)
+### Test 4.2: FIFO Eviction Within Priority
+**Objective**: Verify that items of similar importance are evicted in FIFO order
 
 **Setup**:
-- Create a Working Memory Store with max_tokens=4000
-- Create items with tokens_estimate such that total would exceed 4000
+- Create a Working Memory Store
+- Add 5 items with importance_score=0.5 at different times
 
 **Steps**:
-1. Write items until total tokens would exceed 4000
-2. Verify total tokens
+1. Trigger eviction
+2. Verify eviction order
 
 **Expected Outcome**:
-- Total tokens <= 4000
-- Items were evicted to stay within budget
-- Oldest items were evicted first
+- Oldest items are evicted first
+- Newer items are preserved
 
 **Verification**:
-- `store.total_tokens()` <= 4000
-- Eviction occurred
-- Evicted items are oldest
+- Evicted items are the oldest ones added
+- Remaining items are the newest ones
 
 ---
 
-### Test 4.3: Item Count Limit Takes Precedence
-**Objective**: Verify behavior when both limits are approached
+### Test 4.3: Eviction Respects Importance Threshold
+**Objective**: Verify that items above importance threshold are protected from eviction
 
 **Setup**:
-- Create store with max_items=64, max_tokens=4000
-- Create 65 items with 100 tokens each (6500 total)
+- Create store with importance_threshold_high=0.7
+- Add items with varying importance scores
+- Trigger eviction
 
 **Steps**:
-1. Write all items
-2. Verify which limit was enforced
+1. Add 10 items: 5 with importance=0.8, 5 with importance=0.3
+2. Trigger eviction
+3. Verify which items were evicted
 
 **Expected Outcome**:
-- Store respects both limits
-- Item count limit is enforced (64 items max)
-- Token budget is also respected
+- Low-importance items (0.3) are evicted first
+- High-importance items (0.8) are protected
 
 **Verification**:
-- `store.size()` <= 64
-- `store.total_tokens()` <= 4000
+- Evicted items have importance < 0.7
+- Remaining items include those with importance >= 0.7
 
 ---
 
@@ -372,4 +370,81 @@
 **Verification**:
 - `read()` returns the item
 - After delete, store is empty
+
+---
+
+## Test Suite: Concurrent Eviction Scenarios
+
+### Test 4.17: Concurrent Eviction with Cascading Dependencies
+**Objective**: Verify that eviction policy correctly handles items with dependency chains and protects referenced items
+
+**Setup**:
+- Create Working Memory Store with max_items=10
+- Write Item A: {id: "A", importance_score: 0.9, type: "insight", content: "Core finding"}
+- Write Item B: {id: "B", importance_score: 0.6, type: "conclusion", content: "Based on insight A", references: ["A"]}
+- Write Item C: {id: "C", importance_score: 0.6, type: "action", content: "Follow up from A", references: ["A"]}
+- Write Items D through M (10 items): {id: "D" to "M", importance_score: 0.3, type: "observation"}
+- Total items: 13 (exceeds max_items by 3)
+- Budget triggers eviction of 5 items to free up space
+
+**Steps**:
+1. Write all 13 items in order: A, B, C, D, E, F, G, H, I, J, K, L, M
+2. Trigger eviction (automatic when item count exceeds max_items)
+3. Eviction engine evaluates:
+   - Items D-M (importance=0.3) are candidates
+   - Item A (importance=0.9) is protected by high importance
+   - Items B, C (importance=0.6) are protected because they reference A
+4. Eviction selects 5 lowest-importance items: D, E, F, G, H
+5. Verify remaining items: A, B, C, I, J, K, L, M (8 items, within capacity)
+
+**Expected Outcome**:
+- Eviction removes exactly 5 items (D, E, F, G, H)
+- Items evicted are the lowest-importance items that have no dependents
+- Item A is preserved (importance=0.9, has 2 dependents)
+- Item B is preserved (references A, protected by dependency)
+- Item C is preserved (references A, protected by dependency)
+- Items I, J, K, L, M are preserved (next-lowest importance after evicted items)
+- Final store size: 8 items (within max_items=10)
+
+**Verification**:
+- Store contents after eviction:
+  - Contains exactly 8 items: A, B, C, I, J, K, L, M
+  - Item A: {id: "A", importance: 0.9, dependents: ["B", "C"]}
+  - Item B: {id: "B", importance: 0.6, references: ["A"]}
+  - Item C: {id: "C", importance: 0.6, references: ["A"]}
+  - Items I-M: {id: "I" to "M", importance: 0.3}
+- Eviction log entry:
+  - evicted_items: ["D", "E", "F", "G", "H"]
+  - eviction_reason: "capacity_exceeded"
+  - eviction_strategy: "importance_with_dependencies"
+  - protected_items: {
+      "A": "high_importance_with_dependents",
+      "B": "dependency_on_A",
+      "C": "dependency_on_A"
+    }
+  - eviction_timestamp: <ISO8601>
+  - items_before: 13
+  - items_after: 8
+  - target_capacity: 10
+- Dependency graph integrity:
+  - All references in B and C point to existing item A
+  - No dangling references
+  - Dependency count for A: 2 (B and C)
+- Store metadata:
+  - current_size: 8
+  - max_items: 10
+  - utilization: 0.8 (80%)
+  - total_evictions: 5
+
+**Measurable Acceptance Criteria**:
+- Exactly 5 items evicted (count=5)
+- 0 high-importance items evicted (importance >= 0.7)
+- 0 items with dependents evicted
+- 100% of dependency references remain valid after eviction
+- Eviction log contains all 5 evicted item IDs with reasons
+- Final store size is 8 items (target: ≤10)
+- All protected items (A, B, C) remain in store
+- Evicted items (D-H) are the 5 lowest-importance items without dependencies
+
+---
 

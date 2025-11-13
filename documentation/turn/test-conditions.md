@@ -8,38 +8,33 @@ This document specifies the test conditions for the turn architecture. Every tes
 
 ### 1. Router Tests
 
-#### Test 1.1: Urgency Assessment - High Urgency
-**Condition**: Router receives input with financial threat keywords
-**Expected**: Router assesses urgency as HIGH
-**Verification**: Urgency level = HIGH
+#### Test 1.1: Quick Answer Detection - Scratch Page
+**Condition**: Router receives query that can be answered from Scratch Page
+**Expected**: Router decides "quick answer" approach
+**Verification**: Quick answer = true, Responder activated
 
-#### Test 1.2: Urgency Assessment - Medium Urgency
-**Condition**: Router receives input with time-sensitive but non-critical keywords
-**Expected**: Router assesses urgency as MEDIUM
-**Verification**: Urgency level = MEDIUM
-
-#### Test 1.3: Urgency Assessment - Low Urgency
-**Condition**: Router receives input with no urgency signals
-**Expected**: Router assesses urgency as LOW
-**Verification**: Urgency level = LOW
-
-#### Test 1.4: Hobgoblin Activation - Simple Query
+#### Test 1.2: Quick Answer Detection - Simple Query
 **Condition**: Router receives simple query ("What's 2+2?")
-**Expected**: Router activates only Responder
-**Verification**: Activated hobgoblins = [Responder]
+**Expected**: Router decides "quick answer" approach
+**Verification**: Quick answer = true, Responder activated
 
-#### Test 1.5: Hobgoblin Activation - Complex Query
+#### Test 1.3: Complex Query Detection
 **Condition**: Router receives complex query requiring multiple steps
-**Expected**: Router activates Context Assembler, Plan Generator, Executor, Evaluator, Responder
-**Verification**: Activated hobgoblins includes all required hobgoblins
+**Expected**: Router decides "needs execution" approach
+**Verification**: Quick answer = false, Executor will run
 
-#### Test 1.6: Hobgoblin Activation - Ambiguous Query
+#### Test 1.4: Ambiguous Query Detection
 **Condition**: Router receives ambiguous query
-**Expected**: Router activates Clarifier
-**Verification**: Activated hobgoblins includes Clarifier
+**Expected**: Router decides "needs clarification" approach
+**Verification**: Ambiguous = true, Clarifier will be called by Executor
 
-#### Test 1.7: Learning - Urgency Improvement
-**Condition**: Router makes urgency decision, receives feedback, makes similar decision again
+#### Test 1.5: Executor Always Spawned
+**Condition**: Router makes any decision (quick answer or not)
+**Expected**: Executor is always spawned
+**Verification**: Executor spawned = true
+
+#### Test 1.6: Learning - Quick Answer Improvement
+**Condition**: Router makes quick answer decision, receives feedback, makes similar decision again
 **Expected**: Second decision is better informed than first
 **Verification**: Confidence in pattern increases
 
@@ -50,65 +45,71 @@ This document specifies the test conditions for the turn architecture. Every tes
 **Expected**: Clarifier detects ambiguity
 **Verification**: Ambiguity detected = true
 
-#### Test 2.2: Question Generation
+#### Test 2.2: Clarification Needs Identification
 **Condition**: Clarifier detects ambiguity
-**Expected**: Clarifier generates clarifying questions
-**Verification**: Questions generated > 0
+**Expected**: Clarifier identifies what needs clarification
+**Verification**: Clarification needs identified > 0
 
-#### Test 2.3: Question Quality
-**Condition**: Clarifier generates questions
-**Expected**: Questions are clear, specific, and focused
-**Verification**: User can understand and answer questions
+#### Test 2.3: Responder Integration
+**Condition**: Clarifier identifies clarification needs
+**Expected**: Clarifier passes to Responder for question generation
+**Verification**: Responder receives clarification needs, generates questions
 
 #### Test 2.4: Turn Completion
-**Condition**: Clarifier generates questions
+**Condition**: Responder generates clarifying questions
 **Expected**: Turn ends with clarification request
 **Verification**: Response sent to user, turn ends
 
-### 3. Context Assembler Tests
+### 3. Working Memory Context Assembly Tests
+
+**Note**: Context assembly is now handled by Working Memory (Memory Orchestrator), not a separate daemon.
 
 #### Test 3.1: Context Retrieval
-**Condition**: Context Assembler receives query
-**Expected**: Context Assembler retrieves relevant context
+**Condition**: Executor queries Working Memory for context
+**Expected**: Working Memory retrieves relevant context
 **Verification**: Context retrieved > 0
 
 #### Test 3.2: Context Relevance
-**Condition**: Context Assembler retrieves context
+**Condition**: Working Memory retrieves context
 **Expected**: Retrieved context is relevant to query
 **Verification**: Context relevance score > threshold
 
-#### Test 3.3: Parallel Execution
-**Condition**: Context Assembler runs in parallel with other hobgoblins
-**Expected**: All hobgoblins complete without conflicts
-**Verification**: No race conditions, consistent results
+#### Test 3.3: Threshold Logic
+**Condition**: Working Memory assembles context
+**Expected**: If total_tokens < threshold, return all; else use LLM to select
+**Verification**: Threshold logic applied correctly
 
-### 4. Constraint Checker Tests
+### 4. Executor Constraint Checking Tests
+
+**Note**: Constraint checking is now a built-in capability of Executor, not a separate daemon.
 
 #### Test 4.1: Constraint Identification
-**Condition**: Constraint Checker receives proposed action
-**Expected**: Constraint Checker identifies applicable constraints
+**Condition**: Executor checks proposed action
+**Expected**: Executor identifies applicable constraints
 **Verification**: Constraints identified > 0
 
 #### Test 4.2: Compliance Check - Compliant
 **Condition**: Proposed action complies with constraints
-**Expected**: Constraint Checker marks as COMPLIANT
+**Expected**: Executor marks as COMPLIANT
 **Verification**: Status = COMPLIANT
 
 #### Test 4.3: Compliance Check - Violation
 **Condition**: Proposed action violates constraints
-**Expected**: Constraint Checker marks as VIOLATION
+**Expected**: Executor marks as VIOLATION
 **Verification**: Status = VIOLATION
 
-#### Test 4.4: Alternative Suggestion
-**Condition**: Constraint Checker detects violation
-**Expected**: Constraint Checker suggests compliant alternative
-**Verification**: Alternative provided and is compliant
+#### Test 4.4: Violation Handling
+**Condition**: Executor detects violation
+**Expected**: Executor stops execution and escalates
+**Verification**: Execution stopped, user notified
 
-### 5. Plan Generator Tests
+### 5. FC (Frontal Cortex) Planning Tests
+
+**Note**: Planning is a capability of the Frontal Cortex daemon.
 
 #### Test 5.1: Plan Creation
-**Condition**: Plan Generator receives requirements
-**Expected**: Plan Generator creates execution plan
+**Condition**: Executor queries FC for plan
+**Expected**: FC creates execution plan
 **Verification**: Plan created with steps > 0
 
 #### Test 5.2: Step Ordering
@@ -118,195 +119,276 @@ This document specifies the test conditions for the turn architecture. Every tes
 
 #### Test 5.3: Parallelism Identification
 **Condition**: Plan has independent steps
-**Expected**: Plan Generator identifies parallelizable steps
+**Expected**: FC identifies parallelizable steps
 **Verification**: Independent steps marked as parallel
 
-#### Test 5.4: Plan Optimization
-**Condition**: Plan Generator creates plan
-**Expected**: Plan is optimized for efficiency
-**Verification**: Execution time is minimal
+#### Test 5.4: Plan Update
+**Condition**: Gut raises concern about plan
+**Expected**: FC updates plan based on concern
+**Verification**: Plan updated, new plan returned
 
 ### 6. Executor Tests
 
-#### Test 6.1: Tool Execution
-**Condition**: Executor receives plan with tool call
-**Expected**: Executor calls tool with correct parameters
-**Verification**: Tool called with correct parameters
+#### Test 6.1: Always Spawned
+**Condition**: Turn starts (regardless of Router's decision)
+**Expected**: Executor is always spawned
+**Verification**: Executor spawned = true
 
-#### Test 6.2: Result Collection
-**Condition**: Tool returns result
-**Expected**: Executor collects and stores result
-**Verification**: Result stored in working memory
+#### Test 6.2: Context Gathering
+**Condition**: Executor starts
+**Expected**: Executor queries Working Memory for context
+**Verification**: Context retrieved and available
 
-#### Test 6.3: Sequential Execution
-**Condition**: Plan has dependent steps
-**Expected**: Executor executes steps in order
-**Verification**: Steps executed in correct order
+#### Test 6.3: Plan Querying
+**Condition**: Executor has context
+**Expected**: Executor queries FC for plan
+**Verification**: Plan received from FC with daemon list
 
-#### Test 6.4: Parallel Execution
-**Condition**: Plan has independent steps
-**Expected**: Executor executes steps in parallel
-**Verification**: Steps executed concurrently
+#### Test 6.4: Flexible Daemon Calling
+**Condition**: FC plan specifies daemons to call
+**Expected**: Executor calls daemons in order specified by FC
+**Verification**: Daemons called in correct order
 
-#### Test 6.5: Error Handling
-**Condition**: Tool fails
-**Expected**: Executor alerts Error Handler
-**Verification**: Error Handler receives notification
+#### Test 6.5: Parallel Daemon Execution
+**Condition**: FC plan marks daemons as parallelizable
+**Expected**: Executor calls daemons in parallel
+**Verification**: Daemons called concurrently, results collected
+
+#### Test 6.6: Sub-Turn Spawning
+**Condition**: FC plan specifies spawn_subturn = true
+**Expected**: Executor spawns new turn for parallel work
+**Verification**: Sub-turn spawned and running
+
+#### Test 6.7: Result Collection
+**Condition**: Daemons return results
+**Expected**: Executor collects and stores results
+**Verification**: Results stored in working memory
+
+#### Test 6.7: Responder Integration
+**Condition**: Execution complete
+**Expected**: Executor queries Responder for user message
+**Verification**: Responder generates message
 
 ### 7. Error Handler Tests
+
+**Note**: Error Handler is now a system-wide capability (not just for Executor).
 
 #### Test 7.1: Error Detection
 **Condition**: Tool fails
 **Expected**: Error Handler detects error
 **Verification**: Error detected = true
 
-#### Test 7.2: Retry Strategy
-**Condition**: Transient error occurs
-**Expected**: Error Handler retries
-**Verification**: Tool called again
+#### Test 7.2: Severity Assessment - Low
+**Condition**: Non-critical error occurs
+**Expected**: Error Handler assesses as LOW severity
+**Verification**: Severity = LOW, action = log only
 
-#### Test 7.3: Alternative Strategy
-**Condition**: Tool fails, alternative available
-**Expected**: Error Handler uses alternative tool
-**Verification**: Alternative tool called
+#### Test 7.3: Severity Assessment - Medium
+**Condition**: Tool fails but alternative exists
+**Expected**: Error Handler assesses as MEDIUM severity
+**Verification**: Severity = MEDIUM, action = log + notify
 
-#### Test 7.4: Graceful Failure
-**Condition**: All recovery strategies fail
-**Expected**: Error Handler fails gracefully
-**Verification**: User informed, alternatives suggested
+#### Test 7.4: Severity Assessment - High
+**Condition**: Critical tool fails
+**Expected**: Error Handler assesses as HIGH severity
+**Verification**: Severity = HIGH, action = log + notify + interrupt
 
-### 8. Evaluator Tests
+#### Test 7.5: Severity Assessment - Critical
+**Condition**: Multiple failures or safety violation
+**Expected**: Error Handler assesses as CRITICAL severity
+**Verification**: Severity = CRITICAL, action = log + stop + escalate
 
-#### Test 8.1: Goal Achievement Assessment
+#### Test 7.6: Recovery Strategy
+**Condition**: Error with recovery option
+**Expected**: Error Handler executes recovery
+**Verification**: Recovery executed successfully
+
+### 8. Gut Daemon Tests
+
+#### Test 8.1: Deviation Detection
+**Condition**: Current action deviates from user intent
+**Expected**: Gut detects deviation
+**Verification**: Deviation detected = true
+
+#### Test 8.2: Severity Assessment - Medium
+**Condition**: Minor deviation from user intent
+**Expected**: Gut assesses as MEDIUM severity
+**Verification**: Severity = MEDIUM
+
+#### Test 8.3: Severity Assessment - High
+**Condition**: Significant deviation from user intent
+**Expected**: Gut assesses as HIGH severity
+**Verification**: Severity = HIGH
+
+#### Test 8.4: Severity Assessment - Critical
+**Condition**: Complete misalignment with user intent
+**Expected**: Gut assesses as CRITICAL severity
+**Verification**: Severity = CRITICAL
+
+#### Test 8.5: Async Monitoring
+**Condition**: Gut monitors execution in parallel
+**Expected**: Concerns raised without blocking Executor
+**Verification**: No deadlocks, concerns delivered
+
+#### Test 8.6: Executor Attention Process
+**Condition**: Gut raises HIGH severity concern
+**Expected**: Executor reads concern and interrupts
+**Verification**: Executor queries FC for plan update
+
+### 9. Evaluator Tests
+
+#### Test 9.1: Goal Achievement Assessment
 **Condition**: Turn completes
 **Expected**: Evaluator assesses if goal was achieved
 **Verification**: Assessment produced
 
-#### Test 8.2: Quality Assessment
+#### Test 9.2: Quality Assessment
 **Condition**: Turn completes
 **Expected**: Evaluator assesses result quality
 **Verification**: Quality score produced
 
-#### Test 8.3: Efficiency Assessment
+#### Test 9.3: Efficiency Assessment
 **Condition**: Turn completes
 **Expected**: Evaluator assesses execution efficiency
 **Verification**: Efficiency score produced
 
-#### Test 8.4: Outcome Assessment
+#### Test 9.4: Outcome Assessment
 **Condition**: Evaluator completes assessment
 **Expected**: Outcome assessment provided to Reflector
 **Verification**: Assessment includes all required fields
 
-### 9. Reflector Tests
+### 10. Reflector Tests
 
-#### Test 9.1: Pattern Learning
+#### Test 10.1: Pattern Learning
 **Condition**: Reflector receives outcome assessment
 **Expected**: Reflector identifies patterns
 **Verification**: Patterns extracted
 
-#### Test 9.2: Knowledge Update
+#### Test 10.2: Knowledge Update
 **Condition**: Reflector identifies patterns
 **Expected**: Reflector updates episodic memory
 **Verification**: Memory updated with new patterns
 
-#### Test 9.3: Confidence Adjustment
+#### Test 10.3: Confidence Adjustment
 **Condition**: Reflector learns from outcome
 **Expected**: Confidence in patterns adjusted
 **Verification**: Confidence scores updated
 
-#### Test 9.4: Continuous Improvement
+#### Test 10.4: Continuous Improvement
 **Condition**: Multiple turns with similar patterns
 **Expected**: Decisions improve over time
 **Verification**: Success rate increases
 
-### 10. Responder Tests
+### 11. Responder Tests
 
-#### Test 10.1: Response Generation
+#### Test 11.1: Response Generation
 **Condition**: Responder receives information to communicate
 **Expected**: Responder generates response
 **Verification**: Response generated
 
-#### Test 10.2: Response Clarity
+#### Test 11.2: Question Generation
+**Condition**: Responder receives clarification needs
+**Expected**: Responder generates clarifying questions
+**Verification**: Questions generated
+
+#### Test 11.3: Response Clarity
 **Condition**: Responder generates response
 **Expected**: Response is clear and understandable
 **Verification**: User can understand response
 
-#### Test 10.3: Response Appropriateness
+#### Test 11.4: Response Appropriateness
 **Condition**: Responder generates response
 **Expected**: Response is appropriate for situation
 **Verification**: Tone and format are appropriate
 
-#### Test 10.4: Response Delivery
+#### Test 11.5: Response Delivery
 **Condition**: Responder generates response
 **Expected**: Response is sent to user
 **Verification**: Response delivered
 
-### 11. Integration Tests
+### 12. Integration Tests
 
-#### Test 11.1: Simple Turn - Direct Answer
+#### Test 12.1: Simple Turn - Quick Answer
 **Condition**: User asks simple question (e.g., "What's 2+2?")
-**Expected**: Turn completes with direct answer
+**Expected**: Turn completes with quick answer
 **Verification**:
-- Router activates Responder only
-- Responder generates answer
-- User receives answer
+- Router detects quick answer possible
+- Responder generates answer and sends to user
+- Executor still spawned (for learning/updates)
 - Turn completes successfully
 
-#### Test 11.2: Complex Turn - Full Pipeline
+#### Test 12.2: Complex Turn - Flexible Daemon Orchestration
 **Condition**: User asks complex question requiring analysis (e.g., "Analyze this data and create a report")
 **Expected**: Turn completes with comprehensive answer
 **Verification**:
-- Router activates Context Assembler, Plan Generator, Executor, Evaluator, Responder
-- Context Assembler retrieves relevant context
-- Plan Generator creates execution plan
-- Executor executes plan successfully
-- Evaluator assesses outcome
+- Router detects needs execution
+- Executor spawned
+- Executor queries Working Memory for context
+- Executor queries FC for plan
+- FC returns plan with daemon list and parallelization info
+- Executor calls daemons in order specified by FC
+- Executor collects results
 - Responder generates comprehensive response
 - User receives complete answer
 
-#### Test 11.3: Ambiguous Turn - Clarification
+#### Test 12.3: Ambiguous Turn - Clarification
 **Condition**: User asks ambiguous question (e.g., "Fix the bug")
 **Expected**: Turn ends with clarification request
 **Verification**:
-- Router activates Clarifier
+- Router detects ambiguity
+- Executor spawned
+- FC plan includes Clarifier daemon
+- Executor calls Clarifier
 - Clarifier detects ambiguity
-- Clarifier generates clarifying questions
+- Responder generates clarifying questions
 - Responder sends clarification request
 - Turn ends
 - User can respond with clarification
 
-#### Test 11.4: Urgent Turn - Immediate Response
+#### Test 12.4: Urgent Turn - Quick Answer + Background Work
 **Condition**: User asks urgent question (e.g., "Suspicious email from my bank")
-**Expected**: Immediate response sent, background work continues
+**Expected**: Quick answer sent, background work continues
 **Verification**:
-- Router assesses urgency as HIGH
-- Router activates Responder immediately
-- Responder generates immediate response
-- Response sent to user
-- Executor continues background work
-- Evaluator assesses background work
+- Router detects quick answer possible
+- Responder generates immediate response and sends to user
+- Executor spawned
+- FC plan includes background work (research, learning)
+- Executor calls daemons for background work
 - Reflector learns from outcome
 - Follow-up response sent when background work completes
 
-#### Test 11.5: Constraint-Sensitive Turn
+#### Test 12.5: Constraint-Sensitive Turn
 **Condition**: User asks question that may violate constraints
 **Expected**: Constraints verified before action
 **Verification**:
-- Router activates Constraint Checker
-- Constraint Checker identifies applicable constraints
-- Constraint Checker verifies compliance
-- If compliant: Plan Generator creates plan, Executor executes
-- If violation: Constraint Checker suggests alternative
+- Router decides "execution" approach
+- Executor queries Working Memory for context
+- Executor queries FC for plan
+- Executor checks constraints before executing
+- If compliant: Executor executes plan
+- If violation: Executor stops and escalates
 - Responder communicates result
 - Turn completes appropriately
 
-#### Test 11.6: Error Recovery Turn
+#### Test 12.6: Gut Concern Turn
+**Condition**: Gut detects deviation from user intent during execution
+**Expected**: Executor responds to concern
+**Verification**:
+- Executor starts execution
+- Gut monitors asynchronously
+- Gut detects deviation
+- Gut raises concern with severity
+- If severity > threshold: Executor interrupts
+- Executor queries FC for plan update
+- Plan updated or confirmed
+- Execution continues or redirects
+
+#### Test 12.7: Error Recovery Turn
 **Condition**: Error occurs during turn execution
 **Expected**: Error is handled gracefully
 **Verification**:
 - Executor detects error
-- Error Handler receives notification
-- Error Handler analyzes error
+- Error Handler assesses severity
 - Error Handler selects recovery strategy
 - Recovery strategy executed
 - If recovery succeeds: Turn continues
@@ -336,51 +418,60 @@ This document specifies the test conditions for the turn architecture. Every tes
 - Confidence scores increase
 - User satisfaction improves
 
-#### Test 11.9: Hobgoblin Communication
-**Condition**: Hobgoblins communicate during turn
+#### Test 11.9: Daemon Communication
+**Condition**: Daemons communicate during turn
 **Expected**: Communication is correct and complete
 **Verification**:
-- Router passes context to activated hobgoblins
-- Context Assembler provides context to other hobgoblins
-- Plan Generator passes plan to Executor
+- Router passes context to activated daemons
+- Clarifier provides clarifications to other daemons
 - Executor passes results to Evaluator
 - Evaluator passes assessment to Reflector
 - All communication is correct
 - No information lost
-- All hobgoblins receive necessary information
+- All daemons receive necessary information
 
-#### Test 11.10: Turn Lifecycle - Complete Sequence
+#### Test 11.10: Turn Lifecycle - Flexible Execution
 **Condition**: Complete turn from input to response
-**Expected**: All lifecycle stages complete
+**Expected**: Executor decides which lifecycle states to execute based on daemon outputs
 **Verification**:
 - Input received
-- Router assesses urgency and activates hobgoblins
-- Hobgoblins execute in correct order
-- Results collected
-- Evaluator assesses outcome
-- Responder generates response
+- Executor queries other daemons (Router, Clarifier, etc.)
+- Executor decides which lifecycle states are needed
+- Executor executes only the necessary states
 - Response sent to user
 - Reflector learns from outcome
 - Turn marked complete
-- Lifecycle complete
+- Turn Trace shows which states were executed and why
+
+#### Test 11.11: Turn Lifecycle - State Skipping
+**Condition**: Simple query that doesn't need planning or tool execution
+**Expected**: Executor skips unnecessary states
+**Verification**:
+- Input: "What's 2+2?"
+- Executor queries daemons
+- Executor decides: only Responder needed
+- Executor skips: Pre-Retrieval, WM Assembly, Thought/Planning, Action(s), Reflection
+- Executor executes: Response, Commit/Flush
+- Response sent immediately
+- Turn Trace shows states that were skipped
 
 ## Test Execution Strategy
 
 ### Unit Tests
-- Test each hobgoblin independently
+- Test each daemon independently
 - Verify decision-making logic
 - Verify output format
 - Test with mocked dependencies
 - Verify error handling
 - Test edge cases
 
-**Execution**: Run in parallel, each hobgoblin tested independently
+**Execution**: Run in parallel, each daemon tested independently
 
 ### Integration Tests
-- Test hobgoblins working together
-- Verify communication between hobgoblins
+- Test daemons working together
+- Verify communication between daemons
 - Verify turn completion
-- Test data flow between hobgoblins
+- Test data flow between daemons
 - Verify context passing
 - Test error propagation
 
@@ -460,7 +551,7 @@ A turn is successful if:
 ### Expected Outputs
 - Correct responses for each scenario
 - Expected execution paths
-- Expected hobgoblin activations
+- Expected daemon activations
 - Expected performance metrics
 
 ### Mock Data

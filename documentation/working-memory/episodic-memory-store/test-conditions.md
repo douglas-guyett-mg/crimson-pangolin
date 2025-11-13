@@ -112,8 +112,9 @@
 - Reassembled text is semantically coherent
 
 **Verification**:
-- Chunks end at sentence boundaries
-- Reassembled text reads naturally
+- 100% of chunk boundaries occur at sentence endings (verified by checking last character is '.', '!', '?', or newline)
+- Reassembled text equals original text with 100% character-for-character match
+- No mid-word splits detected (verified by checking no chunk starts or ends mid-word)
 
 ---
 
@@ -304,11 +305,12 @@
 
 **Expected Outcome**:
 - Returns items containing keyword
-- Results are ranked by relevance
+- Results are ranked by relevance score descending
 
 **Verification**:
-- Search results contain keyword
-- Results are ranked
+- 100% of search results contain exact keyword or semantic match with cosine similarity >= 0.8
+- Results are sorted by relevance_score descending (verified by scores[i] >= scores[i+1] for all i)
+- Top result has highest relevance score (BM25 + semantic combined)
 
 ---
 
@@ -418,6 +420,8 @@
 - No degradation with large log
 
 **Verification**:
-- Query time is acceptable (< 1 second for typical queries)
-- Results are accurate
+- Time-range query P95 latency <= 500ms for 10,000 items
+- Search query P95 latency <= 1000ms for 10,000 items
+- query_all() P95 latency <= 2000ms for 10,000 items
+- Results are 100% accurate (no missing or extra items)
 

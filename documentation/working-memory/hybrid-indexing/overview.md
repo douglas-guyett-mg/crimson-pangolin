@@ -145,7 +145,7 @@ Periodically rebuild indexes:
 
 ## Interaction with Other Components
 
-- **Memory Plugins**: Call search operations
+- **Memory Interfaces**: Call search operations
 - **Memory Orchestrator**: Coordinates searches
 - **Embedding Service**: Generates vector embeddings
 - **Vector Database**: Stores and searches vectors

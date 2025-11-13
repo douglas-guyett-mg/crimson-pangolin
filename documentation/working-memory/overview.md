@@ -1,12 +1,14 @@
 # Working Memory System
 
-**Status**: Specification v0.2
-**Last Updated**: 2025-10-31
-**Alignment**: Si Core Engineering Tenants (documentation-as-code, tests-first, modularity, technology-agnosticism)
+**Status:** v0.2 (Draft)
+**Last Updated:** 2025-11-07
+**Alignment:** Si Core Engineering Tenants (documentation-as-code, tests-first, modularity, technology-agnosticism)
 
 ## Overview
 
-The Working Memory System is the central hub for managing all forms of memory in Si. It coordinates the storage, retrieval, and lifecycle of memories across multiple specialized memory types (episodic, semantic, working, conversation history, and others). The system is designed to be modular, extensible, and budget-aware, enabling Si to maintain rich context while respecting computational and storage constraints.
+The Working Memory System is the central hub for managing all forms of memory in Si. It coordinates the storage, retrieval, and lifecycle of memories across multiple specialized memory types (episodic, semantic, working, conversation history, and others). The system is designed to be modular, extensible, and storage-aware, enabling Si to maintain rich context while respecting storage constraints.
+
+**Note**: This system manages memory *storage*. For LLM call budgets and per-user cost tracking, see `documentation/llm-budget-system/`.
 
 This specification is detailed and prescriptive enough for a coding agent to implement in any language and runtime, without vendor lock-in or technology-specific constraints.
 
@@ -16,7 +18,7 @@ The Working Memory System serves to:
 
 1. **Coordinate Memory Operations**: Provide a unified interface for all memory-related operations across multiple memory types
 2. **Assemble Context**: Query all memory types and combine results into coherent context for prompt injection
-3. **Manage Budgets**: Enforce token, event, and time budgets across all memory operations
+3. **Manage Storage**: Enforce storage policies and eviction strategies across all memory stores
 4. **Track Tool Invocations**: Log tool calls and outcomes for learning and skill extraction
 5. **Route Memory Items**: Determine which memory types should receive each item based on content and type
 6. **Support Extensibility**: Enable new memory types to be added without modifying core orchestration logic
@@ -46,10 +48,10 @@ The Working Memory System is inspired by cognitive science research on multi-sto
 - **Semantic Memory (SM)**: Distilled, generalizable knowledge, facts, and skills
 - **Conversation History (CH)**: Recent dialogue with rolling summaries
 - **Memory Orchestrator (MO)**: Central coordinator that routes reads/writes/evictions across stores
-- **Memory Plugin**: Pluggable memory type implementing a standard interface
+- **Memory Interface**: Pluggable memory type implementing a standard interface
 - **Write Gating**: Algorithm that routes items to appropriate memory types based on content and importance
 - **Context Assembly**: Process of querying all memory types and combining results for prompt injection
-- **Budget**: Token, event, or time limits enforced per agent, task, and turn
+- **Eviction Policy**: Strategy for managing storage capacity in each memory store (e.g., FIFO, LRU, importance-based)
 
 ## Core Architecture
 
@@ -64,7 +66,7 @@ The Working Memory System consists of several interconnected components:
 
 ### Central Coordination
 - **Memory Orchestrator**: Central coordinator that manages all memory operations
-- **Memory Plugin Interface**: Contract that all memory types must implement
+- **Memory Interface**: Contract that all memory types must implement
 - **Memory Type Registry**: Registry of available memory types and their capabilities
 
 ### Supporting Systems
@@ -86,9 +88,6 @@ A standardized unit of memory containing:
 - **Metadata**: Tags, source, importance, timestamps, etc.
 - **Lifecycle**: Creation, access, modification, deletion timestamps
 
-### Budget Allocation
-The system distributes available token budget across memory types according to a configurable allocation strategy. Different strategies may prioritize different memory types based on task requirements.
-
 ### Write Gating
 The write gating algorithm determines which memory types should receive each item based on:
 - Item type (observation, fact, skill, pattern, etc.)
@@ -98,10 +97,12 @@ The write gating algorithm determines which memory types should receive each ite
 
 ### Context Assembly
 The process of querying all memory types and combining results into coherent context:
-1. Allocate token budget across memory types
-2. Query each memory type with allocated budget
-3. Rank and combine results
-4. Format for prompt injection
+1. Query each memory type with search parameters
+2. Rank and combine results
+3. Format for prompt injection
+4. Return formatted context with token count
+
+**Note**: The LLM call budget (max tokens in prompt) is enforced by the LLM Budget System, not by memory stores. See `documentation/llm-budget-system/overview.md`.
 
 ## Operations
 
@@ -133,8 +134,8 @@ Returns current budget status.
 ## Design Principles
 
 1. **Modular Architecture**: Each memory type is independent and can be swapped or extended
-2. **Budget-First**: All operations respect configured budgets
-3. **Pluggable Memory Types**: New memory types can be added by implementing the MemoryPlugin interface
+2. **Storage-First**: All operations respect storage policies and eviction strategies
+3. **Pluggable Memory Types**: New memory types can be added by implementing the Memory Interface
 4. **Intent-Based Interface**: Memory types interpret operations according to their own semantics
 5. **Transparent Routing**: Items are routed based on type and content, not explicit configuration
 6. **Auditable**: All operations are logged for debugging and compliance
@@ -152,7 +153,6 @@ Returns current budget status.
 
 The Working Memory System can be configured with:
 
-- **budget_allocation_strategy**: Strategy for allocating token budget across memory types
 - **default_filters**: Default filters for context assembly
 - **enable_tool_tracking**: Whether to track tool invocations (default: true)
 - **enable_skill_extraction**: Whether to enable skill extraction (default: true)
@@ -188,10 +188,7 @@ All memory items share a standardized structure:
 - **EM**: parent_id (string), chunk_index (int)
 - **SM**: version (int), lineage_ids (string[]), validity (time range)
 
-### Budget Constraints (Defaults)
-- **WM**: max_items=64, max_tokens=4k, item_max_tokens=512
-- **EM**: Unbounded append with rolling compaction every N steps
-- **SM**: max_items per agent/task with LRU+importance retention; soft-delete only
+
 
 ## Read Path (Retrieval) Algorithm
 
@@ -202,15 +199,32 @@ Given a ReadContext (query_text, task_id, agent_id, top_k, budget_tokens, includ
    - WM: Recent N items (cheap, recency-biased)
    - EM: Hybrid search (dense + BM25/keywords) with time decay; retrieve k1 candidates
    - SM: Hybrid search + metadata filters (task/agent); retrieve k2 candidates
-3. **Re-rank all candidates**: score = α×similarity + β×recency + γ×importance − δ×duplication
+3. **Re-rank all candidates**:
+   - **Scoring formula**: `score = α×similarity + β×recency + γ×importance − δ×duplication`
+   - **Default coefficients** (tunable via System Change Proposals):
+     - α = 0.40 (similarity weight: how relevant is this to the query?)
+     - β = 0.25 (recency weight: how recent is this?)
+     - γ = 0.25 (importance weight: how important is this?)
+     - δ = 0.10 (duplication penalty: how much does this duplicate existing WM?)
+   - **Rationale**: Similarity is weighted highest because relevance matters most; recency and importance are balanced; duplication is penalized to avoid redundancy
 4. **Novelty filter**: Remove near-duplicates to WM
 5. **Budgeting**: Greedily pack highest-scoring items until budget_tokens exhausted
 6. **Return**: MemoryBundle with selected items and metadata
+
+**Coefficient Tuning:**
+- Initial values are defaults based on cognitive science research
+- Over time, System Change Proposals can suggest coefficient adjustments based on:
+  - Which items were actually useful in past turns
+  - Which items were included but unused
+  - Patterns in task success/failure
+- Changes are tracked in Turn Trace for auditability and learning
 
 **Test Requirements**:
 - Deterministic packing under fixed seeds
 - Hybrid search returns ≥90% of ground-truth relevant items in synthetic tasks
 - Budgeting respects token limits and ordering stability
+- Scoring formula produces consistent rankings across multiple runs
+- Coefficient changes measurably improve context quality (measured via downstream task success)
 
 ## Write Path (Gating) Algorithm
 
@@ -219,10 +233,10 @@ On WriteEvent (item, candidate_store: WM|EM|SM|auto):
 1. **Redact**: Apply PII guard before storage
 2. **Score**: Compute importance (self-eval or heuristic), novelty vs existing memory, and size
 3. **Route**:
-   - Transient reasoning for current step → WM (if within budget)
+   - Transient reasoning for current step → WM
    - Actionable observation or outcome → EM
    - Distilled fact/skill/summary with cross-episode utility → SM
-4. **Budget enforcement**: If WM over budget, cascade oldest low-importance items to EM or drop
+4. **Eviction**: If store capacity exceeded, apply store-specific eviction policy
 5. **Index update**: Upsert dense + sparse indices
 
 **Test Requirements**:
@@ -245,6 +259,12 @@ On WriteEvent (item, candidate_store: WM|EM|SM|auto):
 **Test Requirements**:
 - Compaction never increases total tokens beyond tolerance (+5%)
 - Summaries preserve QA answerability in golden tasks within 2% drop
+
+## Episodic Memory Compaction: Threads and Episodes
+
+For detailed specification of how episodic memory handles conversation threads, episode boundaries, and cross-thread linking, see:
+- **`episodic-memory-compaction.md`** - Comprehensive specification of thread boundary detection (explicit/implicit channels), semantic linking, cross-thread episodes, and aggressive context retrieval
+- **`episodic-memory-compaction-test-conditions.md`** - Test scenarios for all aspects of thread and episode management
 
 ## Example Scenario
 

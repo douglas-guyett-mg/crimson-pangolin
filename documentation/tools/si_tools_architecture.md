@@ -1,8 +1,8 @@
 # Si Tooling Architecture — Technical Plan (Platform-Independent)
 
-Author: Augment Agent
-Status: Draft v0.1
-Last updated: 2025-10-31
+**Status:** v0.1 (Draft)
+**Last Updated:** 2025-11-07
+**Author:** Augment Agent
 
 ## 1) Purpose
 Define a modular, technology-agnostic tooling framework that allows Si to discover, invoke, and evaluate self-contained tools. The plan must be sufficiently detailed to regenerate an implementation in any language, enabling tools to be added or removed by managing their directories alone.
@@ -97,7 +97,31 @@ Responses must be serializable to JSON; runtime adapters may convert native obje
 - Metrics feed the broader observability layer defined in `working_memory_system.md`.
 - Access control: manifests declare required scopes; runtime ensures credentials isolation per tool.
 
-## 11) Testing Requirements
+## 11) Tool Invocation Ordering and Data Flow
+
+See `documentation/tools/tool-invocation-ordering.md` for comprehensive specification covering:
+- **Static Planning**: FC specifies execution order and data flow in natural language
+- **Dynamic Execution**: Executor runs tools and adapts based on actual outputs
+- **Data Flow**: How tool outputs become inputs to downstream tools
+- **Adaptive Decision-Making**: When constraints are violated, Executor loops back to FC
+- **Sub-Turn Spawning**: Breaking tasks into parallel sub-turns for efficiency
+- **Turn Trace Recording**: All decisions and adaptations logged for learning
+
+See `documentation/tools/tool-invocation-ordering-test-conditions.md` for comprehensive test scenarios.
+
+## 12) Error Handling
+
+See `documentation/tools/error-handling.md` for comprehensive error handling specification covering:
+- **Error Classification**: Transient vs. permanent errors
+- **Retry Policies**: Exponential backoff with tool-specific overrides
+- **Circuit Breaker Pattern**: Prevent cascading failures
+- **Timeout Semantics**: Per-tool (hard stop) and per-turn (graceful degradation)
+- **Cascading Failures**: Dependency-based failure propagation
+- **Integration**: Error Handler daemon decision-making
+
+See `documentation/tools/error-handling-test-conditions.md` for comprehensive test scenarios.
+
+## 13) Testing Requirements
 - **Manifest validation:** schema compliance, required fields, semantic version progression.
 - **Contract tests:** request/response round-trips using fixtures; enforce deterministic outputs for golden cases.
 - **Failure handling:** simulate timeouts, partial successes, redaction failures; verify structured `error` payloads.
@@ -106,14 +130,14 @@ Responses must be serializable to JSON; runtime adapters may convert native obje
 
 Tests must be runnable via language-agnostic commands (e.g., `make contract-test`), with instructions documented per tool.
 
-## 12) Best Practices & Recommendations
+## 14) Best Practices & Recommendations
 - Prefer pure functions; isolate side effects behind adapters declared in `resources`.
 - Keep manifests narrowly scoped; compose complex behaviors via orchestrated plans rather than monolithic tools.
 - Provide sample prompts showing how Si should use the tool, aiding prompt-engineering for the planner.
 - Maintain `CHANGELOG.md` per tool detailing manifest and behavior updates.
 - Leverage linting/formatters appropriate to the implementation language but keep docs and manifests purely declarative.
 
-## 13) Open Questions
+## 15) Open Questions
 1. Do we require signed manifests or checksums for supply-chain guarantees?
 2. Should tool removal trigger automated deprecation workflows in working memory?
 3. What is the default cadence for catalog rescans in long-running deployments?

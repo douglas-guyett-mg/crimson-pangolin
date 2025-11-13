@@ -1,5 +1,7 @@
 # Turn Architecture Overview
 
+**Related Documentation**: See `../turn.md` for technical specification, lifecycle states, budgets, invariants, and testing requirements.
+
 ## What is a Turn?
 
 A **turn** is the fundamental unit of Si's execution model. It spans from the moment Si receives sensory input (user message or system trigger) to the moment Si sends a response.
@@ -29,24 +31,24 @@ Sensory Input → Si's Cognitive Process → Response Output = One Turn
 - Output: "I confirmed with your bank - that email is fraudulent. Ignore it."
 - End of Turn 2
 
-## Hobgoblins vs Tools
+## Daemons vs Tools
 
 Si's mind is composed of two distinct types of components:
 
-### Hobgoblins (Internal Cognitive Daemons)
+### Daemons (Internal Cognitive Components)
 
-**What they are**: Internal decision-making components that form Si's cognitive architecture.
+**What they are**: Internal decision-making components that form Si's cognitive architecture. All daemons implement the Daemon Interface (see `documentation/daemon-interface.md`).
 
 **What they do**: Make decisions, coordinate work, learn from experience.
 
 **Examples**:
-- Router: Decides which hobgoblins to activate and what urgency level to assign
-- Plan Generator: Decides what steps to take
-- Executor: Decides which tools to call and in what order
-- Evaluator: Decides if work is complete
-- Reflector: Learns from outcomes and updates Si's knowledge
+- **Router**: Decides urgency level and which daemons should be involved
+- **Executor**: Orchestrates the turn by deciding which lifecycle states to execute and coordinating other daemons
+- **Plan Generator**: Decides what steps to take
+- **Evaluator**: Decides if work is complete
+- **Reflector**: Learns from outcomes and updates Si's knowledge
 
-**Key insight**: Hobgoblins are always part of Si's internal thinking, regardless of whether tools are used.
+**Key insight**: Daemons are always part of Si's internal thinking, regardless of whether tools are used. The **Executor daemon** is special: it orchestrates the entire turn by querying other daemons and deciding which lifecycle states to execute.
 
 ### Tools (External Capabilities)
 
@@ -63,49 +65,100 @@ Si's mind is composed of two distinct types of components:
 - Contact bank
 - Send message
 
-**Key insight**: Tools are only used when a hobgoblin (usually Executor) decides they're needed.
+**Key insight**: Tools are only used when a daemon (usually Executor) decides they're needed.
+
+## The Turn Flow
+
+Si's turn follows a flexible, data-driven flow:
+
+```
+User Input
+  ↓
+Router: "Can we answer this quickly using Scratch Page?"
+  ├─ YES → Responder generates answer → Send to user
+  └─ NO → Continue
+  ↓
+Executor ALWAYS spawned (regardless of Router's decision)
+  ↓
+Executor queries Working Memory for context
+  ↓
+Executor queries FC: "What's the plan?"
+  ↓
+FC returns natural language plan with steps:
+  [Natural language narrative]
+
+  ## Step 1: [Name]
+  Success Criteria: [...]
+  Actions: [...]
+  Parallelizable with: [...]
+
+  ## Step 2: [Name]
+  ...
+  ↓
+Executor executes plan:
+  - For each step (or parallel group):
+    - Use LLM to interpret step description
+    - Decide which daemons/tools to call
+    - Execute decisions
+    - Check success criteria
+  - Handle errors and constraints
+  - Log all context to Turn Trace for learning
+  ↓
+Send response to user (if not already sent by Router)
+  ↓
+Update Working Memory at commit
+```
+
+**Key insight**: The daemon flow is **not fixed** - it's determined by FC's plan. Executor is flexible and can call any daemons in any order/parallelization based on what FC decides.
 
 ## The Distinction Matters
 
 This separation is crucial because:
 
-1. **Hobgoblins are always thinking** - even if no tools are used, hobgoblins are making decisions
+1. **Daemons are always thinking** - even if no tools are used, daemons are making decisions
 2. **Tools are optional** - some turns use many tools, others use none
-3. **Hobgoblins improve over time** - through the learning loop, hobgoblins make better decisions
+3. **Daemons improve over time** - through the learning loop, daemons make better decisions
 4. **Tools are static** - they do what they're designed to do, but don't learn
+5. **Executor orchestrates, not dictates** - Executor decides which states to execute based on other daemons' outputs, not by following a fixed sequence
 
-## Core Hobgoblins
+## Core Daemons
 
-Si's cognitive architecture includes these core hobgoblins (more may be added):
+Si's cognitive architecture includes these core daemons:
 
-1. **Router** - Entry point; decides urgency, which hobgoblins to activate
-2. **Clarifier** - Handles ambiguous inputs; asks follow-up questions
-3. **Context Assembler** - Gathers relevant context from consciousness, working memory, turn trace
-4. **Constraint Checker** - Verifies decisions against consciousness mandates and governance rules
-5. **Plan Generator** - Creates execution plans when needed
-6. **Executor** - Orchestrates tool execution
-7. **Error Handler** - Handles failures; decides whether to retry, escalate, or fail gracefully
-8. **Evaluator** - Assesses whether the turn is complete and successful
-9. **Reflector** - Learns from the turn; updates consciousness, episodic memory, and skills
-10. **Responder** - Generates responses to send to the user
+### Decision Daemons
+1. **Router** - Entry point; decides urgency and approach (immediate response, clarification, or execution)
+2. **Clarifier** - Handles ambiguous inputs; identifies what needs clarification
+3. **Gut** - Async monitor; watches execution and raises concerns about deviation from user intent
+
+### Execution Daemons
+4. **Executor** - Turn orchestrator; gathers context, queries FC for plans, executes, monitors Gut
+5. **FC (Frontal Cortex)** - Planning daemon; creates/updates plans based on context
+
+### Communication Daemons
+6. **Responder** - Generates user-facing messages (questions or responses)
+
+### Learning Daemons
+7. **Evaluator** - Assesses outcomes and produces assessments
+8. **Reflector** - Learns from outcomes and updates knowledge systems
+9. **Responder** - Generates responses to send to the user
 
 ## Decision-Making Foundation
 
-All hobgoblins make decisions using the same information sources:
+All daemons make decisions using the same information sources:
 
 - **Consciousness**: Si's values, mandates, identity, and governance rules
 - **Working Memory**: Current context, conversation history, turn trace
 - **Episodic Memory**: Previous experiences, learned patterns, skills
 - **Input**: The question or situation itself
 
-This means hobgoblins can improve their decisions over time through learning (see Learning Loop).
+This means daemons can improve their decisions over time through learning (see Learning Loop).
 
 ## Next Steps
 
 See related documentation:
-- `hobgoblins/` - Detailed documentation for each hobgoblin
-- `decision-making-model.md` - How hobgoblins make decisions
+- `daemons/` - Detailed documentation for each daemon
+- `decision-making-model.md` - How daemons make decisions
 - `learning-loop.md` - How Si improves through experience
-- `parallelism.md` - How turns and hobgoblins run in parallel
+- `parallelism.md` - How turns and daemons run in parallel
 - `response-timing.md` - How urgency drives response timing
 

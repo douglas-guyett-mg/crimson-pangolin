@@ -249,11 +249,13 @@ Results are ranked by:
 
 ### Query Budget
 
-Each query has token budget:
+Each query has token budget for context assembly:
 - Default: 500 tokens
 - Max: 1000 tokens
 - Shared across all queries in request
 - Enforced during packing
+
+**Note**: This is for context assembly only. LLM call budgets are enforced by the LLM Budget System. See `documentation/llm-budget-system/overview.md`.
 
 ## Tool Memory Access Patterns
 

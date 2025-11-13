@@ -138,7 +138,7 @@ MemoryItem instances must support:
 
 ## Interaction with Other Components
 
-- **Memory Plugins**: Create and manipulate MemoryItem instances
+- **Memory Interfaces**: Create and manipulate MemoryItem instances
 - **Memory Orchestrator**: Passes MemoryItem instances between components
 - **Budget Manager**: Uses tokens_estimate for budget calculations
 - **Serialization Layer**: Converts items to/from storage formats

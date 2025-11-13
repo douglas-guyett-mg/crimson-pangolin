@@ -105,9 +105,10 @@
 - Scores decay exponentially
 
 **Verification**:
-- Recent item score > 0.8
-- Old item score < 0.2
-- Scores follow exponential decay
+- Recent item (t=now) has recency_score >= 0.95
+- 1-hour-old item has recency_score in range [0.5, 0.7]
+- 1-day-old item has recency_score <= 0.1
+- Decay follows formula: score = exp(-age_hours / decay_constant) where decay_constant is configurable
 
 ---
 
@@ -127,7 +128,10 @@
 - Different decay rates produce different scores
 
 **Verification**:
-- Scores change based on decay configuration
+- With decay_constant=12 hours: 1-hour-old item has score >= 0.85
+- With decay_constant=6 hours: 1-hour-old item has score in range [0.6, 0.7]
+- With decay_constant=24 hours: 1-hour-old item has score >= 0.95
+- Score difference between configurations >= 0.15 for same item age
 
 ---
 
@@ -227,7 +231,9 @@
 - Rankings are different
 
 **Verification**:
-- Ranking 1 differs from ranking 2
+- At least 30% of items change rank position between the two rankings
+- Top-3 results differ between rankings (verified by comparing item IDs in positions 1-3)
+- Spearman rank correlation between rankings <= 0.7 (indicating significant reordering)
 
 ---
 
@@ -268,7 +274,9 @@
 - Ranking is adjusted to improve diversity
 
 **Verification**:
-- Different result is ranked higher than it would be without diversity
+- Different result moves up by at least 2 positions compared to relevance-only ranking
+- Average pairwise cosine distance in top-5 results >= 0.4 (with diversity) vs < 0.25 (without diversity)
+- At least 1 diverse item appears in top-3 that would not be there with relevance-only ranking
 
 ---
 
@@ -403,7 +411,9 @@
 - Re-ranking completes quickly (< 100ms)
 
 **Verification**:
-- Re-ranking time is acceptable
+- P95 latency <= 100ms across 100 test runs
+- P99 latency <= 150ms
+- Average latency <= 50ms
 
 ---
 

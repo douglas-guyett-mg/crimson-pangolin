@@ -132,7 +132,7 @@ Validates a summary.
 
 ## Interaction with Other Components
 
-- **Memory Plugins**: Call summarize operations
+- **Memory Interfaces**: Call summarize operations
 - **Memory Orchestrator**: Coordinates summarization
 - **Skill Extractor**: Uses macro-summaries for skill extraction
 - **Turn Trace**: Logs summarization operations

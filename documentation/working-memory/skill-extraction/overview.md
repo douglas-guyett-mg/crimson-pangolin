@@ -71,12 +71,117 @@ Create skill from generalized procedure:
 6. Define parameters and returns
 7. Add examples
 
-### Stage 4: Validation
-Validate skill quality:
+### Stage 4: Validation and Confidence Scoring
+Validate skill quality and calculate initial confidence:
 1. Check if skill is generalizable
 2. Check if skill is reusable
 3. Check if skill is well-defined
-4. Assess confidence level
+4. Calculate initial confidence score (Phase 1)
+5. Decide whether to create skill (must be > 0.7)
+
+## Confidence Scoring Model
+
+Skill confidence is calculated in three phases:
+
+### Phase 1: Extraction (Initial Confidence)
+
+When Skill Extraction Daemon creates a skill, calculate initial confidence:
+
+```
+initial_confidence = (pattern_frequency_score × 0.4) +
+                     (validation_quality_score × 0.6)
+
+Where:
+  pattern_frequency_score = (pattern_count - min_frequency) / (max_frequency - min_frequency)
+    - Example: Pattern appeared 15 times out of 100 items
+    - min_frequency = 3, max_frequency = 50
+    - score = (15 - 3) / (50 - 3) = 12/47 = 0.26
+
+  validation_quality_score = average of validation checks
+    - Generalizability check: 0.0-1.0
+    - Reusability check: 0.0-1.0
+    - Well-defined check: 0.0-1.0
+    - Parameter identification: 0.0-1.0
+    - Example: (1.0 + 1.0 + 0.8 + 1.0) / 4 = 0.95
+
+Example calculation:
+  initial_confidence = (0.26 × 0.4) + (0.95 × 0.6)
+                     = 0.104 + 0.57
+                     = 0.674 ≈ 0.67
+
+Decision:
+  If initial_confidence > 0.7: Create skill
+  If initial_confidence ≤ 0.7: Discard skill
+```
+
+**Rationale:**
+- Pattern frequency validates that this is a real, repeatable behavior
+- Validation quality ensures the skill is well-defined and generalizable
+- Can be calculated immediately at extraction time (no need to wait for usage)
+
+### Phase 2: Usage (Update with Success Rate)
+
+When skill is applied and completes, update confidence:
+
+```
+updated_confidence = (initial_confidence × 0.5) +
+                     (success_rate × 0.5)
+
+Where:
+  success_rate = successful_uses / total_uses
+    - Example: Skill used 5 times, succeeded 4 times
+    - success_rate = 4/5 = 0.8
+
+Example calculation:
+  updated_confidence = (0.90 × 0.5) + (0.8 × 0.5)
+                     = 0.45 + 0.40
+                     = 0.85
+
+Decision:
+  If updated_confidence > 0.7: Keep skill active
+  If updated_confidence ≤ 0.7: Mark as low-confidence (may be deprecated)
+```
+
+**Rationale:**
+- Balances initial confidence with actual performance
+- Success rate measures whether skill works in practice
+- Gradually shifts from theoretical quality to empirical performance
+
+### Phase 3: Evolution (Decay and Continuous Updates)
+
+Over time, update confidence based on usage and decay:
+
+```
+Decay (if skill not used for 30 days):
+  confidence = confidence × 0.95  (5% decay per 30-day period)
+
+Success Update (when skill is used successfully):
+  confidence = min(1.0, confidence + 0.05)
+
+Failure Update (when skill fails):
+  confidence = max(0.0, confidence - 0.10)
+
+Example timeline:
+  Day 0: confidence = 0.85, skill used successfully
+    → confidence = min(1.0, 0.85 + 0.05) = 0.90
+
+  Day 5: skill used, fails
+    → confidence = max(0.0, 0.90 - 0.10) = 0.80
+
+  Day 35: skill not used for 30 days
+    → confidence = 0.80 × 0.95 = 0.76
+
+  Day 40: skill used successfully
+    → confidence = min(1.0, 0.76 + 0.05) = 0.81
+```
+
+**Rationale:**
+- Decay handles skills that become obsolete or less relevant
+- Success updates reward reliable skills
+- Failure updates penalize unreliable skills
+- Asymmetric penalties (−10% for failure, +5% for success) are conservative
+
+---
 
 ## Operations
 

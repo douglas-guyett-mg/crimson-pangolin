@@ -3,26 +3,26 @@
 ## Overview
 
 Si's architecture supports parallelism at two levels:
-1. **Within a turn**: Multiple hobgoblins can execute concurrently
+1. **Within a turn**: Multiple daemons can execute concurrently
 2. **Across turns**: Multiple turns can execute concurrently
 
 This enables efficient use of resources and faster response times.
 
 ## Parallelism Within a Turn
 
-### Scenario: Multiple Hobgoblins Working Together
+### Scenario: Multiple Daemons Working Together
 
-When a turn requires complex decision-making, multiple hobgoblins can work in parallel:
+When a turn requires complex decision-making, multiple daemons can work in parallel:
 
 ```
 Turn starts
     ↓
-Router: Decides urgency and which hobgoblins to activate
+Router: Decides urgency and which daemons to activate
     ↓
 Parallel execution:
-  ├─ Context Assembler: Gathers context from consciousness, working memory, turn trace
-  ├─ Constraint Checker: Verifies against governance rules
-  └─ Plan Generator: Creates execution plan
+  ├─ Working Memory: Gathers context from consciousness, episodic memory, turn trace
+  ├─ Frontal Cortex: Creates execution plan and verifies constraints
+  └─ Executor: Prepares for tool orchestration
     ↓
 Results merge
     ↓
@@ -36,22 +36,19 @@ Evaluator: Assesses outcome
 **Input**: "I want to book a flight to Paris, but I'm concerned about my budget and carbon footprint"
 
 **Parallel work**:
-- **Context Assembler** (parallel): Gathers user's budget, travel history, environmental values
-- **Constraint Checker** (parallel): Verifies against consciousness mandates about sustainability
-- **Plan Generator** (parallel): Creates plan for flight search, carbon offset options, budget analysis
+- **Clarifier** (parallel): Handles any ambiguous inputs
+- **Gut** (parallel): Provides intuitive guidance on user intent
 
-**Result**: All three hobgoblins complete their work, then Executor orchestrates tool calls.
+**Result**: All parallel daemons complete their work, then Executor orchestrates tool calls.
 
 ### Synchronization Points
 
-Hobgoblins can work in parallel until they need to synchronize:
+Daemons can work in parallel until they need to synchronize:
 
 ```
-Context Assembler ──┐
-                    ├─→ Synchronization Point ──→ Executor
-Constraint Checker ─┤
-                    │
-Plan Generator ─────┘
+Clarifier ──┐
+            ├─→ Synchronization Point ──→ Executor
+Gut ────────┘
 ```
 
 At synchronization points, all parallel work must complete before proceeding.
@@ -70,12 +67,12 @@ Turn 1: Suspicious email (HIGH URGENCY)
 
 Turn 2: Travel planning (MEDIUM URGENCY)
   ├─ Router: Detect urgency
-  ├─ Context Assembler: Gather preferences
-  └─ Plan Generator: Create plan
+  ├─ Working Memory: Gather preferences
+  └─ Frontal Cortex: Create plan
 
 Turn 3: General question (LOW URGENCY)
   ├─ Router: Detect urgency
-  └─ Plan Generator: Create comprehensive plan
+  └─ Frontal Cortex: Create comprehensive plan
 
 All three turns active simultaneously
 ```
@@ -181,7 +178,7 @@ Not all work can be parallelized. Some constraints:
 
 ### Speed
 - Multiple turns process simultaneously
-- Multiple hobgoblins work concurrently
+- Multiple daemons work concurrently
 - Faster overall response time
 
 ### Responsiveness
@@ -215,7 +212,7 @@ Not all work can be parallelized. Some constraints:
 
 Parallelism strategy affects technology choices:
 
-**For Hobgoblin Parallelism**:
+**For Daemon Parallelism**:
 - Async/await support
 - Concurrent task scheduling
 - Synchronization primitives

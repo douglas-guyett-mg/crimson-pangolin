@@ -1,5 +1,199 @@
 # Skill Extraction - Test Conditions
 
+## Test Suite: Confidence Scoring
+
+### Test 0.1: Phase 1 - Initial Confidence Calculation
+**Objective**: Verify initial confidence is calculated correctly at extraction time
+
+**Setup**:
+- Pattern appeared 15 times in 100 items (min_frequency=3, max_frequency=50)
+- Validation checks: all 4 passed (generalizability, reusability, well-defined, parameters)
+
+**Steps**:
+1. Calculate pattern_frequency_score = (15 - 3) / (50 - 3) = 0.255
+2. Calculate validation_quality_score = (1.0 + 1.0 + 1.0 + 1.0) / 4 = 1.0
+3. Calculate initial_confidence = (0.255 × 0.4) + (1.0 × 0.6) = 0.702
+
+**Expected Outcome**:
+- initial_confidence = 0.702
+- Skill is created (confidence > 0.7)
+
+**Verification**:
+- Skill exists in Semantic Memory
+- Skill.confidence = 0.702
+
+---
+
+### Test 0.2: Phase 1 - Confidence Below Threshold
+**Objective**: Verify skills with confidence ≤ 0.7 are not created
+
+**Setup**:
+- Pattern appeared 5 times in 100 items
+- Validation checks: 3/4 passed (one check failed)
+
+**Steps**:
+1. Calculate pattern_frequency_score = (5 - 3) / (50 - 3) = 0.043
+2. Calculate validation_quality_score = (1.0 + 1.0 + 0.5 + 1.0) / 4 = 0.875
+3. Calculate initial_confidence = (0.043 × 0.4) + (0.875 × 0.6) = 0.542
+
+**Expected Outcome**:
+- initial_confidence = 0.542
+- Skill is NOT created (confidence ≤ 0.7)
+
+**Verification**:
+- Skill does not exist in Semantic Memory
+- Extraction logs indicate skill was rejected
+
+---
+
+### Test 0.3: Phase 2 - Update Confidence with Success Rate
+**Objective**: Verify confidence is updated when skill is used successfully
+
+**Setup**:
+- Skill created with initial_confidence = 0.90
+- Skill applied 5 times, succeeded 4 times
+
+**Steps**:
+1. Calculate success_rate = 4/5 = 0.8
+2. Calculate updated_confidence = (0.90 × 0.5) + (0.8 × 0.5) = 0.85
+
+**Expected Outcome**:
+- updated_confidence = 0.85
+- Skill remains active (confidence > 0.7)
+
+**Verification**:
+- Skill.confidence updated to 0.85
+- Skill.frequency = 5
+- Skill.last_used = current timestamp
+
+---
+
+### Test 0.4: Phase 2 - Confidence Drops Below Threshold
+**Objective**: Verify skill is marked low-confidence if success rate is poor
+
+**Setup**:
+- Skill created with initial_confidence = 0.75
+- Skill applied 10 times, succeeded 2 times
+
+**Steps**:
+1. Calculate success_rate = 2/10 = 0.2
+2. Calculate updated_confidence = (0.75 × 0.5) + (0.2 × 0.5) = 0.475
+
+**Expected Outcome**:
+- updated_confidence = 0.475
+- Skill marked as low-confidence (confidence ≤ 0.7)
+
+**Verification**:
+- Skill.confidence updated to 0.475
+- Skill.status = "low_confidence"
+- Skill is not recommended for new tasks
+
+---
+
+### Test 0.5: Phase 3 - Decay Over Time
+**Objective**: Verify confidence decays when skill is not used
+
+**Setup**:
+- Skill has confidence = 0.80
+- Skill not used for 30 days
+
+**Steps**:
+1. Calculate decayed_confidence = 0.80 × 0.95 = 0.76
+
+**Expected Outcome**:
+- decayed_confidence = 0.76
+- Skill remains active but less preferred
+
+**Verification**:
+- Skill.confidence updated to 0.76
+- Skill.last_used timestamp is 30+ days old
+
+---
+
+### Test 0.6: Phase 3 - Success Update
+**Objective**: Verify confidence increases when skill is used successfully
+
+**Setup**:
+- Skill has confidence = 0.80
+- Skill used successfully
+
+**Steps**:
+1. Calculate updated_confidence = min(1.0, 0.80 + 0.05) = 0.85
+
+**Expected Outcome**:
+- updated_confidence = 0.85
+- Skill becomes more trusted
+
+**Verification**:
+- Skill.confidence updated to 0.85
+- Skill.frequency incremented
+- Skill.last_used updated
+
+---
+
+### Test 0.7: Phase 3 - Failure Update
+**Objective**: Verify confidence decreases when skill fails
+
+**Setup**:
+- Skill has confidence = 0.80
+- Skill used but failed
+
+**Steps**:
+1. Calculate updated_confidence = max(0.0, 0.80 - 0.10) = 0.70
+
+**Expected Outcome**:
+- updated_confidence = 0.70
+- Skill becomes less trusted
+
+**Verification**:
+- Skill.confidence updated to 0.70
+- Skill.failure_count incremented
+- Skill.last_used updated
+
+---
+
+### Test 0.8: Phase 3 - Confidence Capped at 1.0
+**Objective**: Verify confidence cannot exceed 1.0
+
+**Setup**:
+- Skill has confidence = 0.98
+- Skill used successfully 5 times
+
+**Steps**:
+1. Update 1: min(1.0, 0.98 + 0.05) = 1.0
+2. Update 2: min(1.0, 1.0 + 0.05) = 1.0
+3. Update 3: min(1.0, 1.0 + 0.05) = 1.0
+
+**Expected Outcome**:
+- Confidence capped at 1.0
+- Does not exceed 1.0
+
+**Verification**:
+- Skill.confidence = 1.0
+- Skill.confidence never exceeds 1.0
+
+---
+
+### Test 0.9: Phase 3 - Confidence Floored at 0.0
+**Objective**: Verify confidence cannot go below 0.0
+
+**Setup**:
+- Skill has confidence = 0.05
+- Skill fails
+
+**Steps**:
+1. Calculate updated_confidence = max(0.0, 0.05 - 0.10) = 0.0
+
+**Expected Outcome**:
+- Confidence floored at 0.0
+- Does not go negative
+
+**Verification**:
+- Skill.confidence = 0.0
+- Skill.confidence never goes below 0.0
+
+---
+
 ## Test Suite: Pattern Recognition
 
 ### Test 14.1: Recognize Repeated Patterns

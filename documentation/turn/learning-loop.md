@@ -7,7 +7,7 @@ The learning loop is the mechanism by which Si improves its decision-making over
 ## The Loop
 
 ```
-1. Hobgoblin Makes Decision
+1. Daemon Makes Decision
    (using consciousness + working memory + episodic memory + input)
         ↓
 2. Turn Executes
@@ -23,14 +23,14 @@ The learning loop is the mechanism by which Si improves its decision-making over
    (consciousness, episodic memory, skills are refined)
         ↓
 6. Next Turn
-   (hobgoblin sees similar situation and makes better decision)
+   (daemon sees similar situation and makes better decision)
 ```
 
 ## Detailed Steps
 
-### Step 1: Hobgoblin Makes Decision
+### Step 1: Daemon Makes Decision
 
-A hobgoblin needs to make a decision. It gathers information from:
+A daemon needs to make a decision. It gathers information from:
 - Consciousness (values, mandates, governance)
 - Working Memory (current context)
 - Episodic Memory (previous experiences)
@@ -42,7 +42,7 @@ It makes the best decision it can with available information.
 
 ### Step 2: Turn Executes
 
-The decision is acted upon. Hobgoblins coordinate, tools are called, responses are generated.
+The decision is acted upon. Daemons coordinate, tools are called, responses are generated.
 
 **Example**: Responder generates immediate response, Executor starts research in background.
 
@@ -108,7 +108,7 @@ Reflector updates Si's knowledge base:
 
 ### Step 6: Next Turn
 
-When a similar situation arises, the hobgoblin has better information:
+When a similar situation arises, the daemon has better information:
 - Consciousness is clearer about priorities
 - Episodic Memory has relevant experiences
 - Skills are more refined
@@ -121,7 +121,7 @@ The learning loop can improve:
 
 ### Router's Decisions
 - Better urgency detection
-- Better hobgoblin activation patterns
+- Better daemon activation patterns
 - Better routing strategies
 
 ### Plan Generator's Decisions
@@ -134,7 +134,7 @@ The learning loop can improve:
 - Better tool ordering
 - Better error recovery
 
-### All Hobgoblins
+### All Daemons
 - Better decision-making in their domain
 - Better pattern recognition
 - Better outcome prediction

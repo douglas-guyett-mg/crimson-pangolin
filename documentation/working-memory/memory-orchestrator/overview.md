@@ -22,54 +22,129 @@ The Memory Orchestrator serves to:
 6. **Align with Consciousness**: Read consciousness mandates and inject relevant fragments into context
 7. **Support Transparency**: Log all decisions to Turn Trace with rationale and provenance
 
-## Consciousness Alignment (Design-Time Integration)
+## Consciousness Integration (Daemon Query Pattern)
 
-The Memory Orchestrator is designed to support consciousness requirements through design-time alignment, not runtime coupling. This means the orchestrator's architecture reflects consciousness principles, but consciousness artifacts are read at runtime to inform behavior.
+The Memory Orchestrator queries the consciousness daemon to retrieve mandates, capabilities, and modes at runtime.
 
-### Charter & Mandates Alignment
-- **IC-1 (Mission Alignment)**: MO links pending actions to active goals and mission context
-- **IC-2 (Safety First)**: MO enforces safety policies during context assembly and tool tracking
-- **IC-3 (Transparency)**: MO logs all decisions to Turn Trace with rationale and provenance
-- **IC-4 (Test Integrity)**: MO behavior is fully specified with acceptance criteria and tests
+### Consciousness Daemon Queries
+- **Query 1**: `consciousness.query("What is my core identity and charter?", {})` → Returns core identity mandate
+- **Query 2**: `consciousness.query("What mandates apply to my current mode?", {current_mode: active_mode})` → Returns applicable mandates
+- **Query 3**: `consciousness.query("What capabilities do I have?", {current_mode: active_mode})` → Returns active capabilities
+- **Query 4**: `consciousness.query("What governance rules apply?", {})` → Returns governance rules
 
-The orchestrator provides interfaces for mandate checks (e.g., `check_mandate(action, layer)`) and tracks mandate evaluation results in Turn Trace for auditability.
-
-### Modes & Capabilities Alignment
-- MO interfaces allow filtering context by active mode
-- MO enforces mode-specific tool filters and context budgets
-- MO tracks which capabilities are active and logs them to Turn Trace
-- MO supports CAP-WM (Working Memory Integration capability) by providing structured prompt fragments with metadata
+All queries are asynchronous (return Futures), enabling parallel retrieval.
 
 ### Prompt Assembly Pattern
 The orchestrator assembles context in a prescribed order:
-1. Consciousness fragments (charter, mandates, modes, capabilities)
+1. Consciousness items (charter, mandates, modes, capabilities) - retrieved via daemon queries
 2. Frontal Cortex context (active goals, pending actions, constraints)
 3. Conversation History (recent dialogue + rolling summary)
 4. Retrieved Episodic Memory (relevant events and observations)
 5. Retrieved Semantic Memory (facts, skills, patterns)
 6. Tool specifications
 
-All injected fragments include provenance metadata (source path, version hash) for transparency and auditability.
+All injected fragments include provenance metadata (source, version, rationale) for transparency and auditability.
 
 ## Core Responsibilities
 
-### Context Assembly
-The orchestrator assembles context by:
+### Context Assembly Algorithm
 
-1. **Querying All Memory Types**: Calls remember() on all registered memory types
-2. **Respecting Budgets**: Allocates token budget across memory types according to configured allocation strategy
-3. **Ranking Results**: Combines results from multiple stores
-4. **Formatting Output**: Formats context for injection into prompts
+The orchestrator assembles context by querying memory types in a fixed order (v1), with each query using results from previous queries to inform what to retrieve.
 
-**Process**:
-- Receives context request with token budget and prompt
-- Allocates budget across memory types using configured allocation strategy
-- Calls remember(prompt, metadata) on each memory type with allocated budget
-- Combines results in priority order
-- Returns formatted context
+#### Query Order (v1 - Fixed)
 
-**Budget Allocation**:
-Budget allocation across memory types is configurable. The orchestrator distributes the total token budget to each registered memory type according to the configured allocation strategy. Different allocation strategies may prioritize different memory types based on task requirements.
+```
+1. Consciousness daemon
+   ↓ (get mandates, capabilities, modes, governance rules)
+2. Conversation History
+   ↓ (get recent dialogue, using consciousness context)
+3. Working Memory Store
+   ↓ (get recent items, using consciousness + conversation context)
+4. Frontal Cortex daemon
+   ↓ (get active goals, using consciousness + conversation + WM context)
+5. Episodic Memory Store
+   ↓ (get past events, using consciousness + conversation + WM + FC context)
+6. Semantic Memory Store
+   ↓ (get facts/skills, using all previous context)
+```
+
+#### Process
+
+1. **Query Consciousness daemon**
+   - Call: `consciousness.query("What mandates/capabilities apply?", metadata)`
+   - Returns: `{items: [{id, content, rationale}], effective_at}`
+   - Each memory store receives this context for its queries
+
+2. **Query Conversation History**
+   - Call: `conversation_history.remember(prompt, metadata)`
+   - Metadata includes: consciousness items from step 1
+   - Returns: formatted prompt section with recent dialogue
+
+3. **Query Working Memory Store**
+   - Call: `working_memory.remember(prompt, metadata)`
+   - Metadata includes: consciousness items + conversation history from steps 1-2
+   - Returns: formatted prompt section with recent items
+
+4. **Query Frontal Cortex daemon**
+   - Call: `frontal_cortex.query("What are my active goals?", metadata)`
+   - Metadata includes: consciousness + conversation + WM context
+   - Returns: formatted prompt section with goals and pending actions
+
+5. **Query Episodic Memory Store**
+   - Call: `episodic_memory.remember(prompt, metadata)`
+   - Metadata includes: all previous context
+   - Returns: formatted prompt section with relevant past events
+
+6. **Query Semantic Memory Store**
+   - Call: `semantic_memory.remember(prompt, metadata)`
+   - Metadata includes: all previous context
+   - Returns: formatted prompt section with facts and skills
+
+#### Result Formatting
+
+Each memory store returns a **formatted prompt section** (not raw data):
+
+```
+## [Memory Type Name]
+[Formatted content ready for prompt injection]
+```
+
+The Memory Orchestrator concatenates all sections in order:
+
+```
+## Consciousness
+[consciousness items]
+
+## Conversation History
+[recent dialogue]
+
+## Working Memory
+[recent items]
+
+## Frontal Cortex
+[active goals]
+
+## Episodic Memory
+[relevant past events]
+
+## Semantic Memory
+[facts and skills]
+
+## Tool Specifications
+[available tools]
+```
+
+#### Future Enhancement (v2 - Dynamic Query Order)
+
+Eventually, the query order can be learned based on patterns:
+- Working Memory learns which query order works best for different types of queries
+- Learns which memory stores are most useful for different contexts
+- Adapts the order dynamically based on patterns
+- All context logged to Turn Trace for learning
+
+#### Token Budget Enforcement
+
+**Note**: Turn-level token budgets (if any) are enforced at the turn level, not at the memory store level. Memory stores do not have hard token limits. Each memory store is responsible for formatting its section to fit within reasonable bounds.
 
 ### Tool Invocation Tracking
 The orchestrator tracks tool invocations by:
@@ -180,7 +255,7 @@ Returns current budget status.
 ## Interaction with Other Components
 
 - **Memory Type Registry**: Discovers available memory types
-- **Memory Plugins**: Calls operations on registered types
+- **Memory Interfaces**: Calls operations on registered types
 - **Budget Manager**: Enforces budgets
 - **Turn Trace**: Logs all operations
 - **Frontal Cortex**: Reads goals, writes progress deltas
@@ -190,18 +265,16 @@ Returns current budget status.
 
 The Memory Orchestrator can be configured with:
 
-- **budget_allocation_strategy**: Strategy for allocating token budget across memory types. Specifies how to distribute the total token budget among registered memory types. The strategy determines the proportion of budget allocated to each type.
 - **default_filters**: Default filters for context assembly
 - **enable_tool_tracking**: Whether to track tool invocations (default: true)
 - **enable_skill_extraction**: Whether to enable skill extraction (default: true)
 
 ## Example Scenario
 
-1. Turn starts, orchestrator initializes with configured budget_allocation_strategy
+1. Turn starts, orchestrator initializes
 2. Agent receives user query
-3. Orchestrator calls assemble_context(prompt, budget=2000)
-   - Applies budget_allocation_strategy to distribute 2000 tokens across registered memory types
-   - Calls remember(prompt) on each memory type with allocated budget
+3. Orchestrator calls assemble_context(prompt)
+   - Calls remember(prompt) on each registered memory type
    - Combines results into context
 4. Agent processes query and calls a tool
 5. Orchestrator calls track_tool_invocation() with tool name, params, result

@@ -24,24 +24,24 @@
 
 ---
 
-### Test 1.2: System Initializes with Budget Configuration
-**Objective**: Verify that the system initializes with configured budgets
+### Test 1.2: System Initializes with Memory Types Configuration
+**Objective**: Verify that the system initializes with configured memory types
 
 **Setup**:
-- Configure system with token_budget=5000, event_budget=100, time_budget=60s
+- Configure system with episodic, semantic, working, and conversation history memory types
 - Initialize system
 
 **Steps**:
 1. Initialize system
-2. Check budget status
+2. Check memory type status
 
 **Expected Outcome**:
-- System has correct budgets configured
-- Budget status reflects initial state
+- All configured memory types are initialized
+- Each memory type is ready for operations
 
 **Verification**:
-- get_budget_status() returns configured budgets
-- All budgets are at maximum
+- get_memory_types() returns all configured types
+- Each type responds to operations
 
 ---
 
@@ -69,22 +69,26 @@
 
 ---
 
-### Test 2.2: assemble_context Respects Token Budget
-**Objective**: Verify that context assembly respects total token budget
+### Test 2.2: assemble_context Returns Token Count
+**Objective**: Verify that context assembly returns accurate token count
 
 **Setup**:
-- Initialize system with budget=1000
+- Initialize system with memory types
 - Populate memory types with items
 
 **Steps**:
-1. Call assemble_context(budget=1000)
-2. Verify token count
+1. Call assemble_context(prompt="What happened?")
+2. Verify token count is returned
 
 **Expected Outcome**:
-- Returned context has token count <= 1000
+- Returned context includes token count
+- Token count is accurate
 
 **Verification**:
-- context.token_count <= 1000
+- context.token_count is returned
+- Token count matches actual content
+
+**Note**: LLM call budget enforcement is handled by LLM Budget System, not memory stores. See `documentation/llm-budget-system/overview.md`.
 
 ---
 

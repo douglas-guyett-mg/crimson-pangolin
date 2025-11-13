@@ -229,11 +229,11 @@ All test conditions must be deterministic and reproducible. Tests should use fix
 - Expected: Relevant observations returned
 - Verify: Tool can use observations in decision-making
 
-### Test Suite 9: Hobgoblin Integration
+### Test Suite 9: Daemon Integration
 
-**TC-9.1: Hobgoblin adds pending thought**
-- Setup: Hobgoblin execution context
-- Hobgoblin calls: add_observation({ type: "observation", content: "pending thought" })
+**TC-9.1: Daemon adds pending thought**
+- Setup: Daemon execution context
+- Daemon calls: add_observation({ type: "observation", content: "pending thought" })
 - Expected: Observation created
 - Verify: Observation retrievable
 
@@ -308,6 +308,6 @@ All test conditions must be deterministic and reproducible. Tests should use fix
 - No data loss under concurrent access
 - Lifecycle transitions are enforced
 - Filters work correctly in isolation and combination
-- Integration with tools and hobgoblins works as specified
+- Integration with tools and daemons works as specified
 - Performance is acceptable for 1,000+ observations
 

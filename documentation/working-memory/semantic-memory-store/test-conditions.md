@@ -301,11 +301,12 @@
 
 **Expected Outcome**:
 - Both items are found
-- Ranked by semantic similarity
+- Ranked by semantic similarity descending
 
 **Verification**:
-- Search results include both items
-- Results are ranked by similarity score
+- Search results include both items (100% recall for items with cosine similarity >= 0.7 to query)
+- Results are sorted by similarity_score descending (verified by scores[i] >= scores[i+1] for all i)
+- Top result has cosine similarity >= 0.8 to query
 
 ---
 
@@ -323,10 +324,11 @@
 
 **Expected Outcome**:
 - Items containing "Paris" are found
-- Ranked by keyword relevance
+- Ranked by keyword relevance (BM25 score)
 
 **Verification**:
-- Search results include items with "Paris"
+- 100% of search results contain exact keyword "Paris" (case-insensitive)
+- Results are sorted by BM25_score descending (verified by scores[i] >= scores[i+1] for all i)
 
 ---
 
@@ -344,11 +346,12 @@
 
 **Expected Outcome**:
 - Results include both semantically similar and keyword-matching items
-- Ranked by combined score
+- Ranked by combined score (weighted sum of dense + sparse)
 
 **Verification**:
-- Search results include items from both approaches
-- Results are ranked by combined score
+- Search results include items with either cosine_similarity >= 0.7 OR BM25_score >= 5.0
+- Results are sorted by combined_score descending where combined_score = (0.6 * cosine_similarity) + (0.4 * normalized_BM25)
+- Verify scores[i] >= scores[i+1] for all i
 
 ---
 
@@ -392,8 +395,9 @@
 - Recently accessed items (A, B, C) are preserved
 
 **Verification**:
-- Store contains A, B, C, F, G
-- D and E were evicted
+- Store contains exactly 5 items: [A, B, C, F, G]
+- Items D and E return null/not found when queried by their keys
+- `store.size()` equals 5
 
 ---
 
@@ -414,9 +418,11 @@
 - Low-importance items are evicted
 
 **Verification**:
-- All 3 high-importance items remain
-- 2 low-importance items remain
-- 2 low-importance items were evicted
+- Store contains all 3 high-importance items (importance >= 0.8)
+- Store contains exactly 2 low-importance items (importance <= 0.2)
+- 2 low-importance items are not retrievable (evicted)
+- `store.size()` equals 5
+- No high-importance items were evicted (verified by querying all high-importance keys)
 
 ---
 
@@ -442,23 +448,27 @@
 
 ---
 
-### Test 6.17: Respect Token Budget
-**Objective**: Verify that store respects max_tokens limit
+### Test 6.17: LRU Eviction Removes Least Recently Used Items
+**Objective**: Verify that LRU eviction removes least recently used items
 
 **Setup**:
-- Create store with max_tokens=5000
-- Write items totaling 8000 tokens
+- Create store with LRU eviction policy
+- Write 10 items
+- Access items 1-5 recently, items 6-10 not recently
 
 **Steps**:
-1. Write items
-2. Verify total tokens
+1. Write 10 items
+2. Access items 1-5
+3. Trigger eviction
+4. Verify which items were evicted
 
 **Expected Outcome**:
-- Total tokens <= 5000
-- Items were evicted to stay within budget
+- Items 6-10 (least recently used) are evicted
+- Items 1-5 (recently used) are preserved
 
 **Verification**:
-- `store.total_tokens()` <= 5000
+- Evicted items are 6-10
+- Remaining items are 1-5
 
 ---
 

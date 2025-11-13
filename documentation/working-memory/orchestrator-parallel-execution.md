@@ -508,7 +508,7 @@ Returns: ID for tracking background turn
 ## Next Steps
 
 See related documentation:
-- `documentation/turn/hobgoblins/executor.md` - Executor hobgoblin
+- `documentation/turn/daemons/executor.md` - Executor daemon
 - `documentation/turn/parallelism.md` - Parallelism patterns
 - `documentation/tools/si_tools_architecture.md` - Tool architecture
 

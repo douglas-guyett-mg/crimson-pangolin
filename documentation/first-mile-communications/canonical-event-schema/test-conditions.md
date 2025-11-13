@@ -300,9 +300,10 @@ Enumerate measurable verification criteria to ensure canonical events conform to
 - Only channel-specific metadata differs
 
 **Verification**:
-- session_id, participant_id, text_content are identical
-- channel field differs appropriately
-- metadata.channel_metadata differs but structure is consistent
+- session_id, participant_id, text_content have 100% character-for-character equality across all 3 channels
+- channel field differs appropriately (messaging ≠ browser ≠ mobile)
+- event_type, event_id format, timestamp format are identical across channels
+- metadata.channel_metadata differs but all 3 contain the same top-level keys (verified by set equality of keys)
 
 ---
 
@@ -343,6 +344,7 @@ Enumerate measurable verification criteria to ensure canonical events conform to
 - Content is preserved without truncation
 
 **Verification**:
-- Event is created successfully
-- text_content length is preserved
+- Event is created successfully (no error thrown)
+- text_content length equals exactly 100,000 characters (verified: len(text_content) == 100000)
+- Content hash matches original (verified: SHA256(retrieved) == SHA256(original))
 

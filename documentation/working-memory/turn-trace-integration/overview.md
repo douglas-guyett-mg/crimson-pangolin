@@ -206,7 +206,7 @@ Analyzes logs for insights.
 ## Interaction with Other Components
 
 - **Memory Orchestrator**: Calls log_operation for all operations
-- **Memory Plugins**: Log their operations
+- **Memory Interfaces**: Log their operations
 - **Write Gating Algorithm**: Logs gating decisions
 - **Frontal Cortex**: Logs planning operations
 - **Skill Extraction**: Logs skill operations

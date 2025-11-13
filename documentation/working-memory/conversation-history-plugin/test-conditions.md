@@ -1,4 +1,4 @@
-# Conversation History Plugin - Test Conditions
+# Conversation History Daemon - Test Conditions
 
 ## Test Suite: Rolling Buffer
 
@@ -6,19 +6,20 @@
 **Objective**: Verify that buffer maintains the last N utterances
 
 **Setup**:
-- Create plugin with buffer_size=5
-- Write 7 utterances
+- Create daemon with buffer_size=5
+- Call query() to add 7 utterances
 
 **Steps**:
-1. Write utterances 1-7
-2. Verify buffer contains utterances 3-7
+1. Call query() to add utterances 1-7
+2. Call query() to retrieve all utterances
+3. Verify buffer contains utterances 3-7
 
 **Expected Outcome**:
 - Buffer contains exactly 5 utterances
 - Oldest utterances (1-2) were evicted
 
 **Verification**:
-- `get_last_n(5)` returns utterances 3-7
+- query("Get all utterances") returns utterances 3-7
 - Buffer size equals 5
 
 ---
@@ -27,19 +28,20 @@
 **Objective**: Verify that oldest utterances are evicted first
 
 **Setup**:
-- Create plugin with buffer_size=3
-- Write 5 utterances
+- Create daemon with buffer_size=3
+- Call query() to add 5 utterances
 
 **Steps**:
-1. Write utterances A, B, C, D, E
-2. Verify buffer contains C, D, E
+1. Call query() to add utterances A, B, C, D, E
+2. Call query() to retrieve all utterances
+3. Verify buffer contains C, D, E
 
 **Expected Outcome**:
 - Oldest utterances (A, B) are evicted
 - Newest utterances (C, D, E) are preserved
 
 **Verification**:
-- `get_last_n(3)` returns [C, D, E]
+- query("Get all utterances") returns [C, D, E]
 
 ---
 
@@ -47,7 +49,7 @@
 **Objective**: Verify that utterances are indexed correctly
 
 **Setup**:
-- Create plugin and write 5 utterances
+- Create daemon and call query() to add 5 utterances
 
 **Steps**:
 1. Write utterances
@@ -118,22 +120,22 @@
 **Objective**: Verify that evicted utterances are summarized
 
 **Setup**:
-- Create plugin with buffer_size=3
-- Write 5 utterances
+- Create daemon with buffer_size=3
+- Call query() to add 5 utterances
 
 **Steps**:
-1. Write utterances 1-3
-2. Write utterances 4-5 (triggers eviction)
-3. Verify summary is generated
+1. Call query() to add utterances 1-3
+2. Call query() to add utterances 4-5 (triggers eviction)
+3. Call query() to retrieve summary
 
 **Expected Outcome**:
 - Utterances 1-2 are evicted
 - Summary is generated for evicted utterances
-- Summary is available via get_summary()
+- Summary is available via query()
 
 **Verification**:
-- `get_summary()` returns non-empty summary
-- Summary includes information from utterances 1-2
+- query("Get summary") returns summary with length >= 50 characters
+- Summary contains at least 80% of key entities (names, topics, actions) from utterances 1-2 as measured by exact or semantic match
 
 ---
 
@@ -141,18 +143,18 @@
 **Objective**: Verify that summary respects token limit
 
 **Setup**:
-- Create plugin with summary_token_limit=100
-- Write many utterances to trigger summarization
+- Create daemon with summary_token_limit=100
+- Call query() to add many utterances to trigger summarization
 
 **Steps**:
-1. Write utterances to trigger eviction
-2. Verify summary token count
+1. Call query() to add utterances to trigger eviction
+2. Call query() to retrieve summary with token limit
 
 **Expected Outcome**:
 - Summary token count <= 100
 
 **Verification**:
-- `get_summary().token_count` <= 100
+- query("Get summary", data={token_limit: 100}) returns summary with token_count <= 100
 
 ---
 
@@ -160,8 +162,8 @@
 **Objective**: Verify that new summaries are merged with existing summaries
 
 **Setup**:
-- Create plugin with buffer_size=2
-- Write 6 utterances (triggers multiple evictions)
+- Create daemon with buffer_size=2
+- Call query() to add 6 utterances (triggers multiple evictions)
 
 **Steps**:
 1. Write utterances 1-2
@@ -174,7 +176,7 @@
 - Summaries are merged incrementally
 
 **Verification**:
-- `get_summary()` includes information from utterances 1-4
+- `get_summary()` contains at least 75% of key entities and topics from all 4 evicted utterances (1-4) as measured by entity extraction and overlap comparison
 
 ---
 
@@ -218,7 +220,7 @@
 - Oldest first
 
 **Verification**:
-- `read()` returns utterances in order
+- `read()` returns utterances sorted by timestamp ascending (verified by comparing timestamps[i] <= timestamps[i+1] for all i)
 
 ---
 
@@ -236,10 +238,11 @@
 
 **Expected Outcome**:
 - Returns utterances containing keyword
-- Ranked by relevance
+- Ranked by relevance score descending
 
 **Verification**:
-- Search results contain keyword
+- 100% of search results contain the exact keyword or semantic match with cosine similarity >= 0.85
+- Results are sorted by relevance_score descending (verified by scores[i] >= scores[i+1] for all i)
 
 ---
 
@@ -302,8 +305,8 @@
 - Data persists across sessions
 
 **Verification**:
-- `read()` returns written utterances
-- Data is persisted
+- `read()` returns 100% of written utterances with exact content match
+- Data persists across process restart (verified by killing and restarting process, then confirming read() returns same data)
 
 ---
 
@@ -412,6 +415,6 @@
 - No truncation or data loss
 
 **Verification**:
-- Retrieved utterances match original
-- No data loss
+- Retrieved utterances match original with 100% character-for-character equality
+- Retrieved token count equals original token count (±0 tolerance)
 

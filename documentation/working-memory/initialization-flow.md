@@ -6,7 +6,7 @@
 
 ## Overview
 
-At the start of each turn, the Memory Orchestrator initializes the Working Memory system by loading relevant information from multiple sources. This initialization creates a coherent context that hobgoblins use for decision-making.
+At the start of each turn, the Memory Orchestrator initializes the Working Memory system by loading relevant information from multiple sources. This initialization creates a coherent context that daemons use for decision-making.
 
 The initialization flow is deterministic and follows a prescribed sequence to ensure consistent behavior across turns.
 
@@ -255,7 +255,7 @@ Result: Initial Context Bundle
 
 ```
 10a. Create WM Buffer
-   - Initialize: empty buffer with max_items=64, max_tokens=4000
+   - Initialize: empty buffer with FIFO + importance guard eviction policy
    ↓
 10b. Add Initial Items
    - Add: consciousness fragment
@@ -266,13 +266,15 @@ Result: Initial Context Bundle
 10c. Set WM State
    - current_position: 0
    - step_index: 0
-   - budget_remaining: 2200 tokens
+   - eviction_policy: FIFO with importance guard
    ↓
 Result: Working Memory Store Ready
   - buffer: [ MemoryItem, ... ]
   - position: 0
-  - budget_remaining: 2200
+  - eviction_policy: active
 ```
+
+**Note**: Specific capacity numbers (max_items, max_tokens) are technology-dependent and will be determined during implementation.
 
 ### Phase 11: Finalize Initialization (900-950ms)
 
@@ -351,7 +353,7 @@ If data is inconsistent:
 ## Next Steps
 
 See related documentation:
-- `documentation/turn/hobgoblins/router.md` - How Router uses initialized context
+- `documentation/turn/daemons/router.md` - How Router uses initialized context
 - `documentation/working-memory/memory-orchestrator/overview.md` - Orchestrator operations
 - `documentation/turn/overview.md` - Turn architecture
 

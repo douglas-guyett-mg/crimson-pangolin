@@ -1,8 +1,8 @@
 # Turn Commit Flow & State Export
 
-**Status**: Specification v0.1  
-**Last Updated**: 2025-10-31  
-**Purpose**: Document the detailed sequence of turn finalization and state export
+**Status:** v0.1 (Draft)
+**Last Updated:** 2025-11-07
+**Purpose:** Document the detailed sequence of turn finalization and state export
 
 ## Overview
 
@@ -22,7 +22,7 @@ Turn execution completes
    - Record completion_time
    ↓
 2. Collect execution results
-   - Gather all hobgoblin outputs
+   - Gather all daemon outputs
    - Gather all tool results
    - Gather all errors/warnings
    ↓
@@ -276,7 +276,7 @@ StateExport:
     
   # Metadata
   metadata:
-    hobgoblins_activated: string[]
+    daemons_activated: string[]
     tools_executed: string[]
     errors: string[]
     warnings: string[]
@@ -470,6 +470,6 @@ See related documentation:
 - `documentation/turn/overview.md` - Turn architecture
 - `documentation/working-memory/memory-daemon-integration.md` - Memory daemons
 - `documentation/frontal-cortex/README.md` - Frontal Cortex
-- `documentation/turn/hobgoblins/evaluator.md` - Evaluator hobgoblin
-- `documentation/turn/hobgoblins/reflector.md` - Reflector hobgoblin
+- `documentation/turn/daemons/evaluator.md` - Evaluator daemon
+- `documentation/turn/daemons/reflector.md` - Reflector daemon
 

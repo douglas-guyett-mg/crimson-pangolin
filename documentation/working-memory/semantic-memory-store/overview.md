@@ -11,7 +11,7 @@ The Semantic Memory Store serves to:
 1. **Store Facts and Patterns**: Maintain knowledge about entities, relationships, and patterns
 2. **Support Updates**: Allow facts to be corrected or refined over time
 3. **Enable Hybrid Search**: Support both semantic and keyword-based retrieval
-4. **Manage Capacity**: Use LRU + importance retention to stay within limits
+4. **Manage Capacity**: Use LRU + importance retention for intelligent eviction
 5. **Track Lineage**: Maintain version history for audit and learning
 
 ## Core Characteristics
@@ -199,10 +199,8 @@ Returns information about semantic store capacity and usage.
 **Returns**:
 - Current item count
 - Current token usage
-- Max items limit
-- Max tokens limit
-- Available space
 - LRU and importance information
+- Eviction policy status
 
 ### get_version(item_id, version)
 Retrieves a specific version of an item.
@@ -226,16 +224,14 @@ Retrieves a specific version of an item.
 ## Interaction with Other Components
 
 - **Memory Orchestrator**: Calls memorize/remember/forget/summarize/get_capacity_info operations
-- **Budget Manager**: Enforces capacity limits
 - **Turn Trace**: Logs all semantic operations
 - **Frontal Cortex**: May mark items as important
+- **Skill Extraction**: Analyzes semantic memory for patterns
 
 ## Configuration
 
 The Semantic Memory Store can be configured with:
 
-- **max_items**: Maximum number of items (default: 10000)
-- **max_tokens**: Maximum token budget (default: 50000)
 - **importance_threshold_high**: Importance at or above this is protected (default: 0.7)
 - **importance_threshold_low**: Importance below this is evicted first (default: 0.3)
 - **enable_versioning**: Whether to track versions (default: true)
